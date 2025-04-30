@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 
 class CustomDrawer extends StatelessWidget {
-  // Uygulama logosu için URL tanımı
-  // Drawer başlığında gösterilen logo
-  final String logoUrl =
-      'https://cdn-icons-png.flaticon.com/512/1902/1902201.png';
 
   @override
   Widget build(BuildContext context) {
@@ -24,10 +20,13 @@ class CustomDrawer extends StatelessWidget {
               children: [
                 // Uygulama logosu
                 // Uygulama kimliğini güçlendiren görsel öğe
-                Image.network(
-                  logoUrl,
+                Image.asset(
+                  'images/icon.png',
                   height: 70,
                   width: 70,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Icon(Icons.image, size: 70, color: Colors.white);
+                  },
                 ),
                 SizedBox(height: 10),
                 // Uygulama adı

@@ -11,9 +11,6 @@ class _LoginPageState extends State<LoginPage> {
   // TC kimlik numarası ve şifre bilgilerini saklar ve değişikliklerini takip eder
   final tcController = TextEditingController();
   final sifreController = TextEditingController();
-  
-  // Uygulama logosu için API'den alınan URL
-  final logoUrl = 'https://cdn-icons-png.flaticon.com/512/1902/1902201.png';
 
   @override
   Widget build(BuildContext context) {
@@ -29,10 +26,13 @@ class _LoginPageState extends State<LoginPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // Login ekranında görünen uygulama logosu
-              Image.network(
-                logoUrl,
+              Image.asset(
+                'images/icon.png',
                 height: 140,
                 width: 140,
+                errorBuilder: (context, error, stackTrace) {
+                  return Icon(Icons.image, size: 140, color: Color(0xFF5181BE));
+                },
               ),
               SizedBox(height: 16),
               
@@ -79,13 +79,34 @@ class _LoginPageState extends State<LoginPage> {
               
               // Giriş butonu
               // Kullanıcı bilgilerini kontrol eder ve giriş işlemini başlatır
-              ElevatedButton(
-                onPressed: login,
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF5181BE),
-                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                    minimumSize: Size(double.infinity, 50)),
-                child: Text('Giriş Yap', style: TextStyle(fontSize: 18, color: Colors.white)),
+              Row(
+                children: [
+                  // Giris Yap butonu
+                  Expanded(
+                    flex: 1,
+                    child: ElevatedButton(
+                      onPressed: login,
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFF5181BE),
+                          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                          minimumSize: Size(0, 50)),
+                      child: Text('Giriş Yap', style: TextStyle(fontSize: 16, color: Colors.white)),
+                    ),
+                  ),
+                  SizedBox(width: 10), // Butonlar arasi bosluk
+                  // Kayit Ol butonu
+                  Expanded(
+                    flex: 1,
+                    child: ElevatedButton(
+                      onPressed: register,
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color.fromARGB(255, 240, 76, 64),
+                          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                          minimumSize: Size(0, 50)),
+                      child: Text('Kayıt Ol', style: TextStyle(fontSize: 16, color: Colors.white)),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -132,6 +153,12 @@ class _LoginPageState extends State<LoginPage> {
       // Hata durumunda kullanıcıya bilgi ver
       showMessage("Hata", "Giriş sırasında bir hata oluştu: $e");
     }
+  }
+
+  // Kayit olmak icin yonlendirme yapan metot
+  void register() {
+    // Kayit sayfasina yonlendir
+    Navigator.pushReplacementNamed(context, '/register');
   }
 
   // Hata ve bilgi mesajlarını gösteren yardımcı metot

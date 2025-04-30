@@ -1,0 +1,2 @@
+C:/Users/panda/Desktop/Git-hub/Voxure/android/app/.cxx/Debug/1n32fs2z/armeabi-v7a/CMakeFiles/edit_cache.dir
+C:/Users/panda/Desktop/Git-hub/Voxure/android/app/.cxx/Debug/1n32fs2z/armeabi-v7a/CMakeFiles/rebuild_cache.dir
