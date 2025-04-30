@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import '../services/firebase_service.dart';
 
 class CustomDrawer extends StatelessWidget {
+  // Firebase servisini başlat
+  final FirebaseService _firebaseService = FirebaseService();
 
   @override
   Widget build(BuildContext context) {
@@ -76,14 +79,27 @@ class CustomDrawer extends StatelessWidget {
           // Ayırıcı çizgi - alt menü öğelerini ayırır
           Divider(),
           
+          // Profil Düzenleme menü öğesi
+          ListTile(
+            leading: Icon(Icons.person_outline, color: Color(0xFF5181BE)),
+            title: Text('Profil Bilgilerim'),
+            onTap: () {
+              Navigator.pop(context); // Drawer'ı kapat
+              Navigator.pushNamed(context, '/profile_update');
+            },
+          ),
+          
           // Çıkış menü öğesi
           // Kullanıcıyı oturumdan çıkarır ve giriş sayfasına yönlendirir
           // Diğer menü öğelerinden farklı olarak kırmızı renkli ikon kullanılır
           ListTile(
             leading: Icon(Icons.logout, color: Colors.red),
             title: Text('Çıkış'),
-            onTap: () {
-              Navigator.pushReplacementNamed(context, '/');
+            onTap: () async {
+              // Firebase'den çıkış yap
+              await _firebaseService.signOut();
+              // Giriş sayfasına yönlendir
+              Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
             },
           ),
         ],

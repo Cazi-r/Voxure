@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "375193215607",
+    "project_id": "voxure-app",
+    "storage_bucket": "voxure-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:375193215607:android:ec6cacbc4303c109dc9c72",
+        "android_client_info": {
+          "package_name": "com.example.vote_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBuztfsQyj50mqsYgXF_NbAfTZOKzbPvkA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

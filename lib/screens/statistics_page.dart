@@ -58,13 +58,35 @@ class StatisticsPageState extends State<StatisticsPage> {
             oylar.add(int.parse(oy));
           }
 
-          // Anket verisini güncel oy sayılarıyla güncelle
-          setState(() {
-            surveys[i]['oylar'] = oylar;
-          });
+          // Seçenek sayısı ve oy sayısı uyuşması için kontrol
+          if (oylar.length == surveys[i]['secenekler'].length) {
+            // Anket verisini güncel oy sayılarıyla güncelle
+            setState(() {
+              surveys[i]['oylar'] = oylar;
+            });
+          } else {
+            // Sayılar uyuşmuyorsa, seçenek sayısına göre yeni bir oy dizisi oluştur
+            setState(() {
+              List<int> yeniOylar = List.filled(surveys[i]['secenekler'].length, 0);
+              // Mevcut oyları yeni diziye kopyala (sınırları aşmayacak şekilde)
+              for (int j = 0; j < oylar.length && j < yeniOylar.length; j++) {
+                yeniOylar[j] = oylar[j];
+              }
+              surveys[i]['oylar'] = yeniOylar;
+            });
+          }
         } catch (e) {
           print("Oy verilerini yüklerken hata: $e");
+          // Hata durumunda varsayılan sıfır oyları kullan
+          setState(() {
+            surveys[i]['oylar'] = List.filled(surveys[i]['secenekler'].length, 0);
+          });
         }
+      } else {
+        // Veri yoksa, seçenek sayısına göre sıfır oylar oluştur
+        setState(() {
+          surveys[i]['oylar'] = List.filled(surveys[i]['secenekler'].length, 0);
+        });
       }
     }
   }
@@ -151,10 +173,19 @@ class StatisticsPageState extends State<StatisticsPage> {
   List<Widget> createOptionResults(
       Map<String, dynamic> survey, int totalVotes) {
     List<Widget> results = [];
+    
+    // Oylar listesinin seçeneklerle aynı uzunlukta olduğunu kontrol et
+    List<dynamic> secenekler = survey['secenekler'];
+    List<dynamic> oylar = survey['oylar'];
+    
+    // Dizilerin uzunluklarını uyumlu hale getir
+    if (oylar.length != secenekler.length) {
+      oylar = List.filled(secenekler.length, 0);
+    }
 
-    for (int i = 0; i < survey['secenekler'].length; i++) {
-      String option = survey['secenekler'][i];
-      int voteCount = survey['oylar'][i];
+    for (int i = 0; i < secenekler.length; i++) {
+      String option = secenekler[i];
+      int voteCount = i < oylar.length ? oylar[i] : 0;
 
       // Seçeneğin aldığı oyun toplam oylara oranını yüzde olarak hesapla
       // Toplam oy yoksa yüzde sıfır olacaktır

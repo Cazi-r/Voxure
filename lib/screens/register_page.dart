@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../services/firebase_service.dart';
+import 'dart:developer' as developer;
+import 'package:flutter/services.dart';
 
 class RegisterPage extends StatefulWidget {
   @override
@@ -7,56 +9,19 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
+  // Firebase servisi
+  final FirebaseService _firebaseService = FirebaseService();
+  
   // Form alanlari icin controller'lar
   final tcController = TextEditingController();
   final sifreController = TextEditingController();
   final sifreTekrarController = TextEditingController();
   
-  // Il secimi icin deger tutucu
-  String? selectedCity;
+  // Yukleniyor durumu
+  bool _isLoading = false;
   
-  // Okul secimi icin deger tutucu
-  String? selectedSchool;
-  
-  // Dogum tarihi secimi icin deger tutucu
-  DateTime? selectedDate;
-  
-  // Turkiye'deki illerin listesi
-  final List<String> cities = [
-    'Adana', 'Adıyaman', 'Afyonkarahisar', 'Ağrı', 'Aksaray', 'Amasya', 'Ankara', 'Antalya',
-    'Ardahan', 'Artvin', 'Aydın', 'Balıkesir', 'Bartın', 'Batman', 'Bayburt', 'Bilecik',
-    'Bingöl', 'Bitlis', 'Bolu', 'Burdur', 'Bursa', 'Çanakkale', 'Çankırı', 'Çorum',
-    'Denizli', 'Diyarbakır', 'Düzce', 'Edirne', 'Elazığ', 'Erzincan', 'Erzurum', 'Eskişehir',
-    'Gaziantep', 'Giresun', 'Gümüşhane', 'Hakkari', 'Hatay', 'Iğdır', 'Isparta', 'İstanbul',
-    'İzmir', 'Kahramanmaraş', 'Karabük', 'Karaman', 'Kars', 'Kastamonu', 'Kayseri', 'Kilis',
-    'Kırıkkale', 'Kırklareli', 'Kırşehir', 'Kocaeli', 'Konya', 'Kütahya', 'Malatya', 'Manisa',
-    'Mardin', 'Mersin', 'Muğla', 'Muş', 'Nevşehir', 'Niğde', 'Ordu', 'Osmaniye',
-    'Rize', 'Sakarya', 'Samsun', 'Şanlıurfa', 'Siirt', 'Sinop', 'Sivas', 'Şırnak',
-    'Tekirdağ', 'Tokat', 'Trabzon', 'Tunceli', 'Uşak', 'Van', 'Yalova', 'Yozgat', 'Zonguldak'
-  ];
-  
-  // Istanbul'daki universiteler
-  final List<String> schools = [
-    'Okumuyorum',
-    'Altınbaş Üniversitesi',
-    'Bahçeşehir Üniversitesi',
-    'Beykent Üniversitesi',
-    'Boğaziçi Üniversitesi',
-    'Galatasaray Üniversitesi',
-    'Işık Üniversitesi',
-    'İstanbul Kültür Üniversitesi',
-    'İstanbul Medipol Üniversitesi',
-    'İstanbul Sabahattin Zaim Üniversitesi',
-    'İstanbul Teknik Üniversitesi',
-    'İstanbul Ticaret Üniversitesi',
-    'İstanbul Üniversitesi',
-    'Koç Üniversitesi',
-    'Maltepe Üniversitesi',
-    'Marmara Üniversitesi',
-    'Özyeğin Üniversitesi',
-    'Sabancı Üniversitesi',
-    'Yıldız Teknik Üniversitesi'
-  ];
+  // Kayit asamasi
+  String _loadingMessage = "Kayıt olunuyor...";
 
   @override
   Widget build(BuildContext context) {
@@ -69,260 +34,292 @@ class _RegisterPageState extends State<RegisterPage> {
           onPressed: () => Navigator.pushReplacementNamed(context, '/'),
         ),
       ),
-      // Klavye açıldığında sayfanın tekrar boyutlandırılmasını sağlar
-      resizeToAvoidBottomInset: true,
-      body: SingleChildScrollView(
-        // Klavye açıldığında ilave alt padding ekleyerek içeriğin yukarı kaymasını sağlar
-        padding: EdgeInsets.only(
-          left: 16.0, 
-          right: 16.0, 
-          top: 16.0, 
-          bottom: MediaQuery.of(context).viewInsets.bottom + 16.0
-        ),
-        // Otomatik kaydırma özelliğini etkinleştir
-        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Baslik
-            Center(
-              child: Column(
-                children: [
-                  Image.asset(
-                    'images/icon.png',
-                    height: 100,
-                    width: 100,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Icon(Icons.image, size: 100, color: Color(0xFF5181BE));
-                    },
+      body: Stack(
+        children: [
+          // Ana içerik - her zaman görünür
+          SingleChildScrollView(
+            padding: EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Logo ve baslik
+                Center(
+                  child: Column(
+                    children: [
+                      Image.asset(
+                        'images/icon.png',
+                        height: 100,
+                        width: 100,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Icon(Icons.image, size: 100, color: Color(0xFF5181BE));
+                        },
+                      ),
+                      SizedBox(height: 12),
+                      Text(
+                        'VOXURE - Kayıt Formu',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 24),
+                    ],
                   ),
-                  SizedBox(height: 12),
-                  Text(
-                    'VOXURE - Kayıt Formu',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+                ),
+                
+                // Bilgi mesaji
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue.shade100),
                   ),
-                  SizedBox(height: 24),
-                ],
-              ),
-            ),
-            
-            // TC Kimlik No
-            TextField(
-              controller: tcController,
-              decoration: InputDecoration(
-                labelText: "TC Kimlik No",
-                prefixIcon: Icon(Icons.person),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))
-              ),
-              keyboardType: TextInputType.number,
-              maxLength: 11,
-              textInputAction: TextInputAction.next,
-            ),
-                  
-            SizedBox(height: 10),
-            
-            // Dogum Tarihi Secici
-            InkWell(
-              onTap: () => _selectDate(context),
-              child: InputDecorator(
-                decoration: InputDecoration(
-                  labelText: "Doğum Tarihi",
-                  prefixIcon: Icon(Icons.calendar_today),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.info, color: Colors.blue),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              "Basit Kayıt",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue.shade800,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        "Hesap oluşturmak için sadece TC kimlik numarası ve şifre gerekiyor. Diğer bilgilerinizi (doğum tarihi, il ve okul) daha sonra girebilirsiniz.",
+                        style: TextStyle(color: Colors.blue.shade800),
+                      ),
+                    ],
+                  ),
                 ),
-                child: Text(
-                  selectedDate == null 
-                      ? "Doğum Tarihi Seçiniz" 
-                      : "${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}",
+                SizedBox(height: 24),
+                
+                // TC Kimlik No
+                TextField(
+                  controller: tcController,
+                  decoration: InputDecoration(
+                    labelText: "TC Kimlik No",
+                    prefixIcon: Icon(Icons.person),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))
+                  ),
+                  keyboardType: TextInputType.number,
+                  maxLength: 11,
+                  textInputAction: TextInputAction.next,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly, // Sadece rakam girişine izin verir
+                  ],
+                ),
+                SizedBox(height: 20),
+                
+                // Sifre
+                TextField(
+                  controller: sifreController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: "Şifre",
+                    prefixIcon: Icon(Icons.lock),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  textInputAction: TextInputAction.next,
+                ),
+                SizedBox(height: 20),
+                
+                // Sifre Tekrar
+                TextField(
+                  controller: sifreTekrarController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: "Şifre Tekrar",
+                    prefixIcon: Icon(Icons.lock_reset),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+                SizedBox(height: 30),
+                
+                // Kayit Ol Butonu
+                ElevatedButton(
+                  onPressed: _registerUser,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color.fromARGB(255, 240, 76, 64),
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    minimumSize: Size(double.infinity, 50),
+                  ),
+                  child: Text('KAYIT OL', style: TextStyle(fontSize: 16, color: Colors.white)),
+                ),
+              ],
+            ),
+          ),
+          
+          // Loading overlay - sadece _isLoading true ise görünür
+          if (_isLoading)
+            Container(
+              width: double.infinity,
+              height: double.infinity,
+              color: Colors.black.withOpacity(0.7),
+              child: Center(
+                child: Container(
+                  padding: EdgeInsets.symmetric(vertical: 30, horizontal: 40),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(15),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 10.0,
+                        offset: Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(
+                        color: const Color.fromARGB(255, 240, 76, 64),
+                      ),
+                      SizedBox(height: 24),
+                      Text(
+                        _loadingMessage,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-            SizedBox(height: 20),
-            
-            // Il Secimi
-            DropdownButtonFormField<String>(
-              decoration: InputDecoration(
-                labelText: "Yaşadığınız İl",
-                prefixIcon: Icon(Icons.location_city),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              value: selectedCity,
-              hint: Text("İl Seçiniz"),
-              items: cities.map((String city) {
-                return DropdownMenuItem<String>(
-                  value: city,
-                  child: Text(city),
-                );
-              }).toList(),
-              onChanged: (String? newValue) {
-                setState(() {
-                  selectedCity = newValue;
-                });
-              },
-            ),
-            SizedBox(height: 20),
-            
-            // Okul Secimi (Opsiyonel)
-            DropdownButtonFormField<String>(
-              decoration: InputDecoration(
-                labelText: "Okulunuz",
-                prefixIcon: Icon(Icons.school),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              value: selectedSchool,
-              hint: Text("Okul Seçiniz"),
-              items: schools.map((String school) {
-                return DropdownMenuItem<String>(
-                  value: school,
-                  child: Text(school),
-                );
-              }).toList(),
-              onChanged: (String? newValue) {
-                setState(() {
-                  selectedSchool = newValue;
-                });
-              },
-            ),
-            SizedBox(height: 20),
-            
-            // Sifre
-            TextField(
-              controller: sifreController,
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: "Şifre",
-                prefixIcon: Icon(Icons.lock),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-            ),
-            SizedBox(height: 20),
-            
-            // Sifre Tekrar
-            TextField(
-              controller: sifreTekrarController,
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: "Şifre Tekrar",
-                prefixIcon: Icon(Icons.lock_reset),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-            ),
-            SizedBox(height: 30),
-            
-            // Kayit Ol Butonu
-            ElevatedButton(
-              onPressed: registerUser,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color.fromARGB(255, 240, 76, 64),
-                padding: EdgeInsets.symmetric(vertical: 12),
-                minimumSize: Size(double.infinity, 50),
-              ),
-              child: Text('KAYIT OL', style: TextStyle(fontSize: 16, color: Colors.white)),
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }
   
-  // Dogum tarihi secimi icin tarih secici dialog
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: selectedDate ?? DateTime(2000, 1, 1),
-      firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: Color(0xFF5181BE),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    
-    if (picked != null && picked != selectedDate) {
-      setState(() {
-        selectedDate = picked;
-      });
-    }
-  }
-  
-  // TC kimlik numarası geçerlilik kontrolü
-  bool isIdValid(String? tc) {
-    if (tc == null || tc.isEmpty) return false;  // Boş değer kontrolü
-    if (tc.length != 11) return false;           // 11 hane kontrolü
-    if (tc[0] == '0') return false;              // İlk rakam 0 olmamalı
-    return true;
-  }
-  
-  // Kullanıcı kaydını gerçekleştiren metot
-  void registerUser() {
-    // TC Kimlik kontrolü
-    if (!isIdValid(tcController.text)) {
-      showMessage("Hata", "Geçerli bir TC kimlik numarası giriniz.");
+  // Kayit islemi
+  void _registerUser() async {
+    // TC kimlik kontrolu
+    if (!_isValidTc(tcController.text)) {
+      _showMessage("Hata", "Geçerli bir TC kimlik numarası giriniz.");
       return;
     }
     
-    // Şifre kontrolü
+    // Sifre kontrolu
     if (sifreController.text.isEmpty) {
-      showMessage("Hata", "Şifre alanı boş bırakılamaz.");
+      _showMessage("Hata", "Şifre boş bırakılamaz.");
       return;
     }
     
-    // Şifre eşleşme kontrolü
+    if (sifreController.text.length < 6) {
+      _showMessage("Hata", "Şifre en az 6 karakter olmalıdır.");
+      return;
+    }
+    
     if (sifreController.text != sifreTekrarController.text) {
-      showMessage("Hata", "Şifreler eşleşmiyor.");
+      _showMessage("Hata", "Şifreler eşleşmiyor.");
       return;
     }
     
-    // Doğum tarihi kontrolü
-    if (selectedDate == null) {
-      showMessage("Hata", "Doğum tarihi seçilmelidir.");
-      return;
-    }
+    // Yukleniyor gostergesi
+    setState(() {
+      _isLoading = true;
+      _loadingMessage = "Kayıt olunuyor...";
+    });
     
-    // İl seçimi kontrolü
-    if (selectedCity == null) {
-      showMessage("Hata", "Yaşadığınız ili seçmelisiniz.");
-      return;
-    }
+    // Gorsel etki icin biraz bekleme
+    await Future.delayed(Duration(milliseconds: 1500));
     
-    // Okul seçimi kontrolü
-    if (selectedSchool == null) {
-      showMessage("Hata", "Okul bilgisi girilmedi.");
-      return;
-    }
-    
-    // Başarılı kayıt durumu
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text("Kayıt Başarılı"),
-          content: Text("Kayıt işleminiz başarıyla tamamlandı. Giriş sayfasına yönlendiriliyorsunuz."),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.pushReplacementNamed(context, '/');
-              },
-              child: Text("Tamam"),
-            ),
-          ],
+    try {
+      developer.log("REGISTER_PAGE: Kayıt işlemi başladı. TC: ${tcController.text}", name: 'register_page');
+      
+      // Firebase'e kayit islemi
+      Map<String, dynamic> result = await _firebaseService.registerUser(
+        tcKimlik: tcController.text,
+        sifre: sifreController.text,
+      );
+      
+      developer.log("REGISTER_PAGE: Kayıt cevabı: $result", name: 'register_page');
+      
+      // Giris asamasina gecis
+      setState(() {
+        _loadingMessage = "Giriş yapılıyor...";
+      });
+      
+      // Gorsel etki icin biraz daha bekleme
+      await Future.delayed(Duration(milliseconds: 1500));
+      
+      setState(() {
+        _isLoading = false;
+      });
+      
+      // Kullanici zaten oturum acmissa dogrudan ana sayfaya yonlendir
+      if (_firebaseService.isUserLoggedIn()) {
+        Navigator.pushReplacementNamed(context, '/home');
+        return;
+      }
+      
+      if (result['success']) {
+        // Basarili kayit mesaji
+        _showMessage(
+          "Kayıt Başarılı", 
+          "Hesabınız başarıyla oluşturuldu.",
+          onPressed: () {
+            // Ana sayfaya yonlendir
+            Navigator.pushReplacementNamed(context, '/home');
+          }
         );
-      },
-    );
+      } else {
+        // Hata mesaji
+        String errorMessage = result['message'] ?? "Bilinmeyen hata";
+        
+        // Eger kullanici zaten kayitli ve giris yapildiysa ana sayfaya yonlendir
+        if (errorMessage.contains('zaten kayıtlı, giriş yapıldı')) {
+          _showMessage(
+            "Dikkat", 
+            errorMessage,
+            onPressed: () {
+              // Ana sayfaya yonlendir
+              Navigator.pushReplacementNamed(context, '/home');
+            }
+          );
+        } else {
+          // Normal hata mesaji
+          _showMessage("Kayıt Hatası", errorMessage);
+        }
+      }
+    } catch (e) {
+      developer.log("REGISTER_PAGE: Beklenmeyen hata: $e", name: 'register_page');
+      
+      setState(() {
+        _isLoading = false;
+      });
+      
+      // Firebase Auth kullanicisi oturum acmissa, hata olsa bile basarili kabul et
+      if (_firebaseService.isUserLoggedIn()) {
+        _showMessage(
+          "Kayıt Başarılı", 
+          "Hesabınız oluşturuldu.",
+          onPressed: () {
+            Navigator.pushReplacementNamed(context, '/home');
+          }
+        );
+      } else {
+        // Hata mesaji
+        _showMessage("Beklenmeyen Hata", "Kayıt sırasında bir hata oluştu. Lütfen tekrar deneyin.");
+      }
+    }
   }
   
-  // Hata ve bilgi mesajlarını gösteren yardımcı metot
-  void showMessage(String title, String message) {
+  // Mesaj gosterme
+  void _showMessage(String title, String message, {Function()? onPressed}) {
     showDialog(
       context: context,
       builder: (context) {
@@ -331,12 +328,22 @@ class _RegisterPageState extends State<RegisterPage> {
           content: Text(message),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: onPressed ?? () => Navigator.pop(context),
               child: Text("Tamam"),
             ),
           ],
         );
       },
     );
+  }
+  
+  // TC kimlik numarası geçerlilik kontrolü
+  bool _isValidTc(String? tc) {
+    if (tc == null || tc.isEmpty) return false;
+    if (tc.length != 11) return false;
+    if (tc[0] == '0') return false;
+    // Sadece rakam içerip içermediğini kontrol et
+    if (!RegExp(r'^[0-9]+$').hasMatch(tc)) return false;
+    return true;
   }
 } 

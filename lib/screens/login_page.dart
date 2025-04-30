@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'survey_page.dart';
+import '../services/firebase_service.dart';
+import 'dart:developer' as developer;
+import 'package:flutter/services.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -8,107 +10,114 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  // TC kimlik numarası ve şifre bilgilerini saklar ve değişikliklerini takip eder
+  // Firebase servisi
+  final FirebaseService _firebaseService = FirebaseService();
+  
+  // Text controller'lar
   final tcController = TextEditingController();
   final sifreController = TextEditingController();
+  
+  // Loading durumu
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Color(0xFF5181BE),
-        title: Text("Giriş Sayfası"),
+        title: Text("Giris Sayfasi"),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Login ekranında görünen uygulama logosu
-              Image.asset(
-                'images/icon.png',
-                height: 140,
-                width: 140,
-                errorBuilder: (context, error, stackTrace) {
-                  return Icon(Icons.image, size: 140, color: Color(0xFF5181BE));
-                },
-              ),
-              SizedBox(height: 16),
-              
-              // Uygulama başlığı
-              // Ana uygulama ismini gösterir
-              Text(
-                'VOXURE',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Uygulama logosu
+                Image.asset(
+                  'images/icon.png',
+                  height: 140,
+                  width: 140,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Icon(Icons.image, size: 140, color: Color(0xFF5181BE));
+                  },
                 ),
-              ),
-              SizedBox(height: 24),
-              
-              // TC Kimlik No giriş alanı
-              // Kullanıcı tanımlaması için TC kimlik numarası istenir
-              // 11 karakter sınırlaması ve sadece sayı girişi sağlanır
-              TextField(
-                controller: tcController,
-                decoration: InputDecoration(
-                    labelText: "TC Kimlik No",
-                    prefixIcon: Icon(Icons.person),
+                SizedBox(height: 16),
+                
+                // Uygulama başlığı
+                Text(
+                  'VOXURE',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 24),
+                
+                // TC Kimlik No giriş alanı
+                TextField(
+                  controller: tcController,
+                  decoration: InputDecoration(
+                      labelText: "TC Kimlik No",
+                      prefixIcon: Icon(Icons.person),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10))),
+                  keyboardType: TextInputType.number,
+                  maxLength: 11,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly, // Sadece rakam girişine izin verir
+                  ],
+                ),
+                SizedBox(height: 12),
+                
+                // Şifre giriş alanı
+                TextField(
+                  controller: sifreController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: "Sifre",
+                    prefixIcon: Icon(Icons.lock),
                     border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10))),
-                keyboardType: TextInputType.number,
-                maxLength: 11,
-              ),
-              SizedBox(height: 12),
-              
-              // Şifre giriş alanı
-              // Kullanıcının şifresini gizli şekilde girmesini sağlar
-              // Güvenlik için metin gizlenir (obscureText: true)
-              TextField(
-                controller: sifreController,
-                obscureText: true,
-                decoration: InputDecoration(
-                  labelText: "Şifre",
-                  prefixIcon: Icon(Icons.lock),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10)),
+                        borderRadius: BorderRadius.circular(10)),
+                  ),
                 ),
-              ),
-              SizedBox(height: 24),
-              
-              // Giriş butonu
-              // Kullanıcı bilgilerini kontrol eder ve giriş işlemini başlatır
-              Row(
-                children: [
-                  // Giris Yap butonu
-                  Expanded(
-                    flex: 1,
-                    child: ElevatedButton(
-                      onPressed: login,
-                      style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF5181BE),
-                          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                          minimumSize: Size(0, 50)),
-                      child: Text('Giriş Yap', style: TextStyle(fontSize: 16, color: Colors.white)),
-                    ),
-                  ),
-                  SizedBox(width: 10), // Butonlar arasi bosluk
-                  // Kayit Ol butonu
-                  Expanded(
-                    flex: 1,
-                    child: ElevatedButton(
-                      onPressed: register,
-                      style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color.fromARGB(255, 240, 76, 64),
-                          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                          minimumSize: Size(0, 50)),
-                      child: Text('Kayıt Ol', style: TextStyle(fontSize: 16, color: Colors.white)),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+                SizedBox(height: 24),
+                
+                // Giriş butonu
+                _isLoading
+                    ? CircularProgressIndicator()
+                    : Row(
+                        children: [
+                          // Giris Yap butonu
+                          Expanded(
+                            flex: 1,
+                            child: ElevatedButton(
+                              onPressed: _login,
+                              style: ElevatedButton.styleFrom(
+                                  backgroundColor: Color(0xFF5181BE),
+                                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                                  minimumSize: Size(0, 50)),
+                              child: Text('Giris Yap', style: TextStyle(fontSize: 16, color: Colors.white)),
+                            ),
+                          ),
+                          SizedBox(width: 10),
+                          // Kayit Ol butonu
+                          Expanded(
+                            flex: 1,
+                            child: ElevatedButton(
+                              onPressed: _register,
+                              style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color.fromARGB(255, 240, 76, 64),
+                                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                                  minimumSize: Size(0, 50)),
+                              child: Text('Kayit Ol', style: TextStyle(fontSize: 16, color: Colors.white)),
+                            ),
+                          ),
+                        ],
+                      ),
+              ],
+            ),
           ),
         ),
       ),
@@ -116,54 +125,126 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   // TC kimlik numarası geçerlilik kontrolü
-  // TC numarası 11 haneli olmalı ve ilk rakamı 0 olmamalıdır
-  bool isIdValid(String? tc) {
-    if (tc == null || tc.isEmpty) return false;  // Boş değer kontrolü
-    if (tc.length != 11) return false;           // 11 hane kontrolü
-    if (tc[0] == '0') return false;              // İlk rakam 0 olmamalı
+  bool _isValidTc(String? tc) {
+    if (tc == null || tc.isEmpty) return false;
+    if (tc.length != 11) return false;
+    if (tc[0] == '0') return false;
+    // Sadece rakam içerip içermediğini kontrol et
+    if (!RegExp(r'^[0-9]+$').hasMatch(tc)) return false;
     return true;
   }
 
-  // Kullanıcı giriş işlemini gerçekleştiren metot
-  // TC kimlik ve şifre kontrolü yaparak giriş işlemini yönetir
-  void login() async {
-    // TC kimlik numarası geçerlilik kontrolü
-    // Geçersiz ise hata mesajı gösterilir
-    if (!isIdValid(tcController.text)) {
-      showMessage("Hata", "Geçerli bir TC kimlik numarası giriniz.");
+  // Giriş işlemi
+  void _login() async {
+    // Input kontrolü
+    if (!_isValidTc(tcController.text)) {
+      _showMessage("Hata", "Gecerli bir TC kimlik numarasi giriniz.");
       return;
     }
     
-    // Şifre boş olmamalı kontrolü
-    // Boş ise hata mesajı gösterilir
     if (sifreController.text.isEmpty) {
-      showMessage("Hata", "Şifre alanı boş bırakılamaz.");
+      _showMessage("Hata", "Sifre alani bos birakilamaz.");
       return;
     }
 
+    // Loading göstergesi
+    setState(() {
+      _isLoading = true;
+    });
+    
     try {
-      // Kullanıcı TC'sini cihaz hafızasına kaydet
-      // SharedPreferences kullanarak oturum bilgisini saklar
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      prefs.setString('user_id', tcController.text);
-
-      // Ana sayfaya yönlendir - giriş başarılı
-      Navigator.pushReplacementNamed(context, '/home');
+      developer.log("LOGIN_PAGE: Giris deneniyor. TC: ${tcController.text}", name: 'login_page');
+      
+      // Firebase ile giriş kontrolü
+      Map<String, dynamic> result = await _firebaseService.loginUser(
+        tcKimlik: tcController.text,
+        sifre: sifreController.text,
+      );
+      
+      developer.log("LOGIN_PAGE: Giris cevabi: $result", name: 'login_page');
+      developer.log("LOGIN_RESULT_DETAILS: ${result.toString()}", name: 'login_page');
+      
+      setState(() {
+        _isLoading = false;
+      });
+      
+      // Kullanici zaten oturum acmissa dogrudan ana sayfaya yonlendir
+      if (_firebaseService.isUserLoggedIn()) {
+        developer.log("LOGIN_PAGE: Kullanici zaten giris yapmis, ana sayfaya yonlendiriliyor", name: 'login_page');
+        Navigator.pushReplacementNamed(context, '/home');
+        return;
+      }
+      
+      if (result['success'] == true) {
+        // Ana sayfaya yönlendir - giriş başarılı
+        developer.log("LOGIN_PAGE: Giris basarili, ana sayfaya yonlendiriliyor", name: 'login_page');
+        
+        try {
+          await Future.delayed(Duration(milliseconds: 100));
+          Navigator.pushReplacementNamed(context, '/home');
+          developer.log("LOGIN_PAGE: Ana sayfaya yonlendirme tamamlandi", name: 'login_page');
+        } catch (navError) {
+          developer.log("LOGIN_PAGE: Yonlendirme hatasi: $navError", name: 'login_page');
+          _showMessage("Hata", "Ana sayfaya yonlendirme sirasinda hata olustu: $navError");
+        }
+      } else {
+        // Giriş başarısız
+        _showMessage("Hata", result['message'] ?? "Giris yapilamadi");
+      }
     } catch (e) {
-      // Hata durumunda kullanıcıya bilgi ver
-      showMessage("Hata", "Giriş sırasında bir hata oluştu: $e");
+      developer.log("LOGIN_PAGE: Beklenmeyen hata: $e", name: 'login_page');
+      
+      setState(() {
+        _isLoading = false;
+      });
+      
+      // Firebase Auth kullanicisi oturum acmissa, hata olsa bile basarili kabul et
+      if (_firebaseService.isUserLoggedIn()) {
+        Navigator.pushReplacementNamed(context, '/home');
+      } else {
+        _showMessage("Hata", "Giris sirasinda bir hata olustu. Lutfen tekrar deneyin.");
+      }
     }
   }
 
-  // Kayit olmak icin yonlendirme yapan metot
-  void register() {
-    // Kayit sayfasina yonlendir
+  // Kayıt sayfasına yönlendirme
+  void _register() {
     Navigator.pushReplacementNamed(context, '/register');
   }
+  
+  // Şifre sıfırlama işlemi
+  void _resetPassword() async {
+    // TC numarası doğrulaması
+    if (!_isValidTc(tcController.text)) {
+      _showMessage("Hata", "Sifre sifirlamak icin gecerli bir TC kimlik numarasi giriniz.");
+      return;
+    }
+    
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      Map<String, dynamic> result = await _firebaseService.resetPassword(tcController.text);
+      
+      setState(() {
+        _isLoading = false;
+      });
+      
+      _showMessage(
+        result['success'] ? "Basarili" : "Hata", 
+        result['message']
+      );
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      _showMessage("Hata", "Sifre sifirlama sirasinda bir hata olustu.");
+    }
+  }
 
-  // Hata ve bilgi mesajlarını gösteren yardımcı metot
-  // AlertDialog kullanarak kullanıcıya bildirim gösterir
-  void showMessage(String title, String message) {
+  // Mesaj gösterimi
+  void _showMessage(String title, String message) {
     showDialog(
       context: context,
       builder: (context) {
