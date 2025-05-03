@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'survey_page.dart';
 import '../services/firebase_service.dart';
-import 'dart:developer' as developer;
 import 'package:flutter/services.dart';
 
 class LoginPage extends StatefulWidget {
@@ -25,7 +24,7 @@ class _LoginPageState extends State<LoginPage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Color(0xFF5181BE),
-        title: Text("Giris Sayfasi"),
+        title: Text("Giriş Sayfası"),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -76,7 +75,7 @@ class _LoginPageState extends State<LoginPage> {
                   controller: sifreController,
                   obscureText: true,
                   decoration: InputDecoration(
-                    labelText: "Sifre",
+                    labelText: "Şifre",
                     prefixIcon: Icon(Icons.lock),
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10)),
@@ -98,7 +97,7 @@ class _LoginPageState extends State<LoginPage> {
                                   backgroundColor: Color(0xFF5181BE),
                                   padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
                                   minimumSize: Size(0, 50)),
-                              child: Text('Giris Yap', style: TextStyle(fontSize: 16, color: Colors.white)),
+                              child: Text('Giriş Yap', style: TextStyle(fontSize: 16, color: Colors.white)),
                             ),
                           ),
                           SizedBox(width: 10),
@@ -111,7 +110,7 @@ class _LoginPageState extends State<LoginPage> {
                                   backgroundColor: const Color.fromARGB(255, 240, 76, 64),
                                   padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
                                   minimumSize: Size(0, 50)),
-                              child: Text('Kayit Ol', style: TextStyle(fontSize: 16, color: Colors.white)),
+                              child: Text('Kayıt Ol', style: TextStyle(fontSize: 16, color: Colors.white)),
                             ),
                           ),
                         ],
@@ -138,12 +137,12 @@ class _LoginPageState extends State<LoginPage> {
   void _login() async {
     // Input kontrolü
     if (!_isValidTc(tcController.text)) {
-      _showMessage("Hata", "Gecerli bir TC kimlik numarasi giriniz.");
+      _showMessage("Hata", "Geçerli bir TC kimlik numarası giriniz.");
       return;
     }
     
     if (sifreController.text.isEmpty) {
-      _showMessage("Hata", "Sifre alani bos birakilamaz.");
+      _showMessage("Hata", "Şifre alanı boş bırakılamaz.");
       return;
     }
 
@@ -152,57 +151,45 @@ class _LoginPageState extends State<LoginPage> {
       _isLoading = true;
     });
     
-    try {
-      developer.log("LOGIN_PAGE: Giris deneniyor. TC: ${tcController.text}", name: 'login_page');
-      
+    try {      
       // Firebase ile giriş kontrolü
       Map<String, dynamic> result = await _firebaseService.loginUser(
         tcKimlik: tcController.text,
         sifre: sifreController.text,
       );
       
-      developer.log("LOGIN_PAGE: Giris cevabi: $result", name: 'login_page');
-      developer.log("LOGIN_RESULT_DETAILS: ${result.toString()}", name: 'login_page');
-      
       setState(() {
         _isLoading = false;
       });
       
-      // Kullanici zaten oturum acmissa dogrudan ana sayfaya yonlendir
+      // Kullanıcı zaten oturum açmışsa doğrudan ana sayfaya yönlendir
       if (_firebaseService.isUserLoggedIn()) {
-        developer.log("LOGIN_PAGE: Kullanici zaten giris yapmis, ana sayfaya yonlendiriliyor", name: 'login_page');
         Navigator.pushReplacementNamed(context, '/home');
         return;
       }
       
       if (result['success'] == true) {
         // Ana sayfaya yönlendir - giriş başarılı
-        developer.log("LOGIN_PAGE: Giris basarili, ana sayfaya yonlendiriliyor", name: 'login_page');
-        
         try {
           await Future.delayed(Duration(milliseconds: 100));
           Navigator.pushReplacementNamed(context, '/home');
-          developer.log("LOGIN_PAGE: Ana sayfaya yonlendirme tamamlandi", name: 'login_page');
         } catch (navError) {
-          developer.log("LOGIN_PAGE: Yonlendirme hatasi: $navError", name: 'login_page');
-          _showMessage("Hata", "Ana sayfaya yonlendirme sirasinda hata olustu: $navError");
+          _showMessage("Hata", "Ana sayfaya yönlendirme sırasında hata oluştu: $navError");
         }
       } else {
         // Giriş başarısız
-        _showMessage("Hata", result['message'] ?? "Giris yapilamadi");
+        _showMessage("Hata", result['message'] ?? "Giriş yapılamadı");
       }
     } catch (e) {
-      developer.log("LOGIN_PAGE: Beklenmeyen hata: $e", name: 'login_page');
-      
       setState(() {
         _isLoading = false;
       });
       
-      // Firebase Auth kullanicisi oturum acmissa, hata olsa bile basarili kabul et
+      // Firebase Auth kullanıcısı oturum açmışsa, hata olsa bile başarılı kabul et
       if (_firebaseService.isUserLoggedIn()) {
         Navigator.pushReplacementNamed(context, '/home');
       } else {
-        _showMessage("Hata", "Giris sirasinda bir hata olustu. Lutfen tekrar deneyin.");
+        _showMessage("Hata", "Giriş sırasında bir hata oluştu. Lütfen tekrar deneyin.");
       }
     }
   }
@@ -216,7 +203,7 @@ class _LoginPageState extends State<LoginPage> {
   void _resetPassword() async {
     // TC numarası doğrulaması
     if (!_isValidTc(tcController.text)) {
-      _showMessage("Hata", "Sifre sifirlamak icin gecerli bir TC kimlik numarasi giriniz.");
+      _showMessage("Hata", "Şifre sıfırlamak için geçerli bir TC kimlik numarası giriniz.");
       return;
     }
     
@@ -232,14 +219,14 @@ class _LoginPageState extends State<LoginPage> {
       });
       
       _showMessage(
-        result['success'] ? "Basarili" : "Hata", 
+        result['success'] ? "Başarılı" : "Hata", 
         result['message']
       );
     } catch (e) {
       setState(() {
         _isLoading = false;
       });
-      _showMessage("Hata", "Sifre sifirlama sirasinda bir hata olustu.");
+      _showMessage("Hata", "Şifre sıfırlama sırasında bir hata oluştu.");
     }
   }
 

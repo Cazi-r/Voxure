@@ -3,7 +3,6 @@ import '../widgets/custom_drawer.dart';
 import '../services/firebase_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'dart:developer' as developer;
 
 class HomePage extends StatefulWidget {
   @override
@@ -15,9 +14,9 @@ class _HomePageState extends State<HomePage> {
   final FirebaseService _firebaseService = FirebaseService();
   // Firestore referansı
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  // Yukleniyor durumu
+  // Yükleniyor durumu
   bool _isLoading = false;
-  // Kullanici bilgisi
+  // Kullanıcı bilgisi
   User? currentUser;
   // Profil bilgileri eksik mi?
   bool _isProfileIncomplete = true;
@@ -31,7 +30,7 @@ class _HomePageState extends State<HomePage> {
     _loadUser();
   }
 
-  // Kullanici bilgilerini yukle
+  // Kullanıcı bilgilerini yükle
   void _loadUser() async {
     setState(() {
       _isLoading = true;
@@ -45,7 +44,10 @@ class _HomePageState extends State<HomePage> {
         await _checkProfileCompleteness();
       }
     } catch (e) {
-      developer.log("Kullanici bilgisi yuklenirken hata: $e", name: 'home_page');
+      // Hata durumunda varsayılan olarak profil eksik kabul edilir
+      setState(() {
+        _isProfileIncomplete = true;
+      });
     } finally {
       setState(() {
         _isLoading = false;
@@ -77,8 +79,6 @@ class _HomePageState extends State<HomePage> {
         setState(() {
           _isProfileIncomplete = !(hasBirthDate && hasCity && hasSchool);
         });
-        
-        developer.log("Profil durumu: ${_isProfileIncomplete ? 'Eksik' : 'Tam'}", name: 'home_page');
       } else {
         // Kullanıcı dokümanı yoksa profil eksiktir
         setState(() {
@@ -86,7 +86,6 @@ class _HomePageState extends State<HomePage> {
         });
       }
     } catch (e) {
-      developer.log("Profil bilgileri kontrol edilirken hata: $e", name: 'home_page');
       // Hata durumunda varsayılan olarak profil eksik kabul edilir
       setState(() {
         _isProfileIncomplete = true;
@@ -94,7 +93,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // Cikis islemi
+  // Çıkış işlemi
   Future<void> _signOut() async {
     setState(() {
       _isLoading = true;
@@ -103,15 +102,14 @@ class _HomePageState extends State<HomePage> {
     try {
       await _firebaseService.signOut();
       
-      // Login sayfasina yonlendir
+      // Login sayfasına yönlendir
       Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
     } catch (e) {
-      developer.log("Cikis yaparken hata: $e", name: 'home_page');
       setState(() {
         _isLoading = false;
       });
       
-      // Hata mesaji goster
+      // Hata mesajı göster
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Çıkış yaparken bir hata oluştu"))
       );

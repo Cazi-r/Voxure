@@ -2,22 +2,25 @@ import 'package:flutter/material.dart';
 import '../widgets/custom_drawer.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'dart:developer' as developer;
+import '../services/blockchain_service.dart';
 
+/// SurveyPage: Kullanıcının anketlere oy verebildiği sayfa.
+///
+/// Bu sayfa kullanıcı profiline göre filtrelenmiş anketleri gösterir
+/// ve kullanıcının oy vermesini sağlar. Oylar blockchain servisine kaydedilir.
 class SurveyPage extends StatefulWidget {
   @override
   State<SurveyPage> createState() => SurveyPageState();
 }
 
 class SurveyPageState extends State<SurveyPage> {
-  // Firebase referansları (sadece profil bilgileri için)
+  // Firebase ve blockchain servisleri
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  
-  // Giriş yapan kullanıcının ID'si
-  String? userId;
+  final BlockchainService _blockchainService = BlockchainService();
   
   // Kullanıcı bilgileri
+  String? userId;
   int? userAge;
   String? userCity;
   String? userSchool;
@@ -25,8 +28,7 @@ class SurveyPageState extends State<SurveyPage> {
   // Veri yükleniyor mu?
   bool isLoading = true;
 
-  // Anket verileri listesi - Her anket bir Map olarak tanımlanmıştır
-  // Her Map içerisinde soru metni, seçenekler, oy sayıları, kullanıcı tercihi, görsel öğeler bulunur
+  // Anket verileri listesi
   List<Map<String, dynamic>> surveys = [
     {
       'id': 'cumhurbaskanligi_secimi',
@@ -55,8 +57,6 @@ class SurveyPageState extends State<SurveyPage> {
       'renk': Colors.blue,
       'minYas': 18, // 18 yaş ve üzeri
       'ilFiltresi': true, // İl bilgisi olmalı
-      'okulFiltresi': null, // Okul filtresi yok
-      'belirliOkul': null, // Belirli bir okul seçimi yok
       'belirliIl': 'İstanbul', // Sadece İstanbul'da yaşayanlar görebilir
     },
     {
@@ -70,9 +70,8 @@ class SurveyPageState extends State<SurveyPage> {
       'ikon': Icons.school,
       'renk': Colors.brown,
       'minYas': 0, // Yaş sınırı yok
-      'ilFiltresi': null, // İl filtresi yok
-      'okulFiltresi': true, // Okul bilgisi olmalı ve "Okumuyorum" olmamalı
-      'belirliOkul': 'İstanbul Sabahattin Zaim Üniversitesi', // Sadece İstanbul Sabahattin Zaim Üniversitesi öğrencileri
+      'okulFiltresi': true, // Okul bilgisi olmalı
+      'belirliOkul': 'İstanbul Sabahattin Zaim Üniversitesi', 
     },
     {
       'id': 'isletim_sistemi',
@@ -85,9 +84,6 @@ class SurveyPageState extends State<SurveyPage> {
       'ikon': Icons.computer,
       'renk': Colors.orange,
       'minYas': 12, // 12 yaş ve üzeri
-      'ilFiltresi': null, // İl filtresi yok
-      'okulFiltresi': null, // Okul filtresi yok
-      'belirliOkul': null, // Belirli bir okul seçimi yok
     },
     {
       'id': 'sosyal_medya',
@@ -100,35 +96,29 @@ class SurveyPageState extends State<SurveyPage> {
       'ikon': Icons.public,
       'renk': Colors.purple,
       'minYas': 15, // 15 yaş ve üzeri
-      'ilFiltresi': null, // İl filtresi yok
-      'okulFiltresi': null, // Okul filtresi yok
-      'belirliOkul': null, // Belirli bir okul seçimi yok
     },
   ];
 
   @override
   void initState() {
     super.initState();
-    // Kullanıcı bilgilerini yükle
     _loadUserData();
   }
 
-  // Kullanıcının profil bilgilerini Firestore'dan yükler
+  /// Kullanıcının profil bilgilerini Firestore'dan yükler
   Future<void> _loadUserData() async {
     setState(() {
       isLoading = true;
     });
     
     try {
-      // Mevcut kullanıcı
+      // Mevcut kullanıcı bilgilerini al
       User? currentUser = _auth.currentUser;
       
       if (currentUser != null) {
-        // Kullanıcı ID'sini kaydet
         userId = currentUser.uid;
-        developer.log("Mevcut kullanıcı: $userId", name: 'survey_page');
         
-        // Kullanıcı profil bilgilerini Firestore'dan al (yaş, il ve okul için)
+        // Kullanıcı profil bilgilerini Firestore'dan al
         DocumentSnapshot userDoc = await _firestore
             .collection('users')
             .doc(userId)
@@ -142,8 +132,6 @@ class SurveyPageState extends State<SurveyPage> {
             userCity = userData['city'] as String?;
             userSchool = userData['school'] as String?;
           });
-          
-          developer.log("Kullanıcı şehri: $userCity, okulu: $userSchool", name: 'survey_page');
           
           // Doğum tarihini al ve yaşı hesapla
           Timestamp? birthDateTimestamp = userData['birthDate'] as Timestamp?;
@@ -162,35 +150,91 @@ class SurveyPageState extends State<SurveyPage> {
             setState(() {
               userAge = age;
             });
-            developer.log("Hesaplanan kullanıcı yaşı: $userAge", name: 'survey_page');
           } else {
-            developer.log("UYARI: birthDate alanı bulunamadı veya null", name: 'survey_page');
-            // Doğum tarihi olmasa bile diğer profil bilgileri varsa anketleri göstermek için
-            // varsayılan bir yaş ata (örneğin 18)
+            // Varsayılan yaş
             setState(() {
-              userAge = 18; // Varsayılan yaş
+              userAge = 18;
             });
           }
-        } else {
-          developer.log("UYARI: Kullanıcı dokümanı bulunamadı", name: 'survey_page');
         }
-      } else {
-        developer.log("HATA: Oturum açmış kullanıcı bulunamadı", name: 'survey_page');
+        
+        // Kullanıcı bilgileri yüklendikten sonra blockchain verilerini yükle
+        await _loadVotesFromBlockchain();
       }
     } catch (e) {
-      developer.log("Kullanıcı veri yüklenirken hata: $e", name: 'survey_page');
+      // Hata durumunda sessizce devam et
     } finally {
       setState(() {
         isLoading = false;
       });
     }
   }
+  
+  /// Blockchain'den oy verilerini yükler
+  Future<void> _loadVotesFromBlockchain() async {
+    try {
+      if (userId == null) return;
+      
+      // Tüm anket verilerini blockchain'den al
+      Map<String, Map<int, int>> allVotes = await _blockchainService.getAllSurveyVotes();
+      
+      // Kullanıcının kendi oylarını bulmak için tüm anketleri kontrol et
+      for (var i = 0; i < surveys.length; i++) {
+        String surveyId = surveys[i]['id'];
+        
+        // Blockchain'den bu anket için oy verileri var mı kontrol et
+        Map<int, int> voteData = await _blockchainService.getSurveyVotes(surveyId);
+        if (voteData.isNotEmpty) {
+          // Tüm anket oylarını güncelle
+          List<int> newVotes = List<int>.filled(surveys[i]['secenekler'].length, 0);
+          voteData.forEach((optionIndex, count) {
+            if (optionIndex >= 0 && optionIndex < newVotes.length) {
+              newVotes[optionIndex] = count;
+            }
+          });
+          
+          // Bu anket için toplam oylar
+          surveys[i]['oylar'] = newVotes;
+          
+          // Kullanıcının bu anket için önceden oy verip vermediğini kontrol et
+          Map<String, dynamic>? userVote = await _blockchainService.getUserVote(userId!, surveyId);
+          
+          if (userVote != null) {
+            // Kullanıcının verdiği oyu bulduysak, anketi kilitli olarak işaretle
+            int optionIndex = userVote['optionIndex'] as int;
+            
+            setState(() {
+              surveys[i]['oyVerildi'] = true;
+              surveys[i]['kilitlendi'] = true;
+              surveys[i]['secilenSecenek'] = optionIndex;
+            });
+          }
+        }
+      }
+    } catch (e) {
+      // Hata durumunda sessizce devam et
+    }
+  }
+  
+  /// Kullanıcının belirli bir ankete oy verip vermediğini kontrol eder
+  Future<bool> _checkIfUserVotedForSurvey(String surveyId) async {
+    try {
+      if (userId == null) return false;
+      
+      // BlockchainService'in getUserVote metodunu kullan
+      Map<String, dynamic>? userVote = await _blockchainService.getUserVote(userId!, surveyId);
+      
+      // Eğer kullanıcı oyu bulunduysa true döndür
+      return userVote != null;
+    } catch (e) {
+      // Hata durumunda sessizce devam et
+      return false;
+    }
+  }
 
-  // Kullanıcı bir seçeneği seçtiğinde çağrılan metot
-  // Seçilen seçeneğin oy sayısını artırır ve kullanıcı tercihini kaydeder
-  // Burada ileride blockchain entegrasyonu yapılacak
+  /// Kullanıcı bir seçeneği seçtiğinde çağrılan metot
   void vote(int surveyIndex, int optionIndex) async {
-    if (userId == null) return; // Kullanıcı giriş yapmamışsa işlem yapma
+    if (userId == null) return;
     
     // Anket kilitlenmişse işlemi engelle
     if (surveys[surveyIndex]['kilitlendi'] == true) {
@@ -204,26 +248,22 @@ class SurveyPageState extends State<SurveyPage> {
         surveys[surveyIndex]['oylar'][oncekiSecenek]--;
       }
       
-      // Seçilen seçeneğin oy sayısını bir artır
+      // Seçilen seçeneğin oy sayısını artır
       surveys[surveyIndex]['oylar'][optionIndex]++;
-      // Bu anket için kullanıcının oy verdiğini işaretle ve seçimini kaydet
       surveys[surveyIndex]['oyVerildi'] = true;
       surveys[surveyIndex]['secilenSecenek'] = optionIndex;
     });
     
-    // TODO: Blockchain entegrasyonu için oy verilerini hazırla
+    // Oy verilerini blockchain icin hazirla
     final Map<String, dynamic> voteData = {
       'userId': userId,
       'surveyId': surveys[surveyIndex]['id'],
       'optionIndex': optionIndex,
       'timestamp': DateTime.now().millisecondsSinceEpoch,
     };
-    
-    developer.log("Oy verildi: $voteData", name: 'survey_page');
-    // Burada blockchain'e veri gönderme işlemi yapılacak
   }
 
-  // Anketin kullanıcıya gösterilip gösterilmeyeceğini kontrol eder
+  /// Anketin kullanıcıya gösterilip gösterilmeyeceğini kontrol eder
   bool shouldShowSurvey(Map<String, dynamic> survey) {
     // Yaş kontrolü
     if (userAge != null && survey['minYas'] != null && userAge! < survey['minYas']) {
@@ -313,7 +353,7 @@ class SurveyPageState extends State<SurveyPage> {
     );
   }
   
-  // Profil güncelleme hatırlatıcısı
+  /// Profil bilgileri eksik olduğunda gösterilen uyarı widget'ı
   Widget _buildProfileUpdateReminder() {
     return Center(
       child: Padding(
@@ -342,7 +382,6 @@ class SurveyPageState extends State<SurveyPage> {
                 style: TextStyle(fontSize: 16),
               ),
             ),
-            // Yenileme butonu
             SizedBox(height: 12),
             TextButton.icon(
               onPressed: () {
@@ -360,8 +399,7 @@ class SurveyPageState extends State<SurveyPage> {
     );
   }
 
-  // Anket kartını oluşturan widget metodu
-  // Her anket için başlık, simge ve seçenekleri içeren kart oluşturur
+  /// Anket kartını oluşturan widget metodu
   Widget createSurveyCard(int surveyIndex) {
     Map<String, dynamic> survey = surveys[surveyIndex];
     bool hasVoted = survey['oyVerildi'] == true;
@@ -372,7 +410,6 @@ class SurveyPageState extends State<SurveyPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Soru başlığı ve anket ikonu
-          // Başlık üst kısmında anketin konusuyla ilgili bir ikon ve soru metni bulunur
           Padding(
             padding: EdgeInsets.all(16),
             child: Row(
@@ -392,7 +429,6 @@ class SurveyPageState extends State<SurveyPage> {
           Divider(height: 1),
 
           // Anket seçenekleri listesi
-          // Anketin tüm seçeneklerini ayrı satırlar halinde alt alta listeler
           Column(
             children: List.generate(
               survey['secenekler'].length,
@@ -407,17 +443,14 @@ class SurveyPageState extends State<SurveyPage> {
     );
   }
 
-  // Her seçenek için ayrı bir satır oluşturan widget metodu
-  // Seçenek adını, seçim durumunu ve oy verilmiş ise oy sayısını gösterir
-  Widget createOptionRow(
-      int surveyIndex, int optionIndex, bool hasVoted) {
+  /// Her seçenek için satır oluşturan widget metodu
+  Widget createOptionRow(int surveyIndex, int optionIndex, bool hasVoted) {
     Map<String, dynamic> survey = surveys[surveyIndex];
     String option = survey['secenekler'][optionIndex];
     bool isSelected = survey['secilenSecenek'] == optionIndex;
     bool isLocked = survey['kilitlendi'] == true;
 
     return ListTile(
-      // Sadece anket kilitlenmişse tıklama devre dışı bırakılır
       onTap: isLocked
           ? null
           : () {
@@ -451,7 +484,7 @@ class SurveyPageState extends State<SurveyPage> {
     );
   }
 
-  // Kaydetme onay dialogunu goster
+  /// Oy kaydetme onay dialogunu gösterir
   void _showSaveConfirmationDialog() {
     showDialog(
       context: context,
@@ -462,15 +495,15 @@ class SurveyPageState extends State<SurveyPage> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // Dialog'u kapat
-                _resetUnconfirmedVotes(); // Kaydedilmemis oylari sifirla
+                Navigator.of(context).pop();
+                _resetUnconfirmedVotes();
               },
               child: Text('İptal'),
             ),
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // Dialog'u kapat
-                _saveAllVotes(); // Tum oylari kaydet
+                Navigator.of(context).pop();
+                _saveAllVotes();
               },
               child: Text('Eminim'),
             ),
@@ -480,34 +513,32 @@ class SurveyPageState extends State<SurveyPage> {
     );
   }
 
-  // Kaydedilmemis/kilitlenmemis oylari sifirla
+  /// Kaydedilmemiş oyları sıfırlar
   void _resetUnconfirmedVotes() {
     setState(() {
       for (var survey in surveys) {
-        // Sadece oyVerildi=true ve kilitlendi=false olan anketleri sifirla
+        // Sadece oyVerildi=true ve kilitlendi=false olan anketleri sıfırla
         if (survey['oyVerildi'] == true && survey['kilitlendi'] != true) {
-          // Kullanicinin secimini iptal et
+          // Kullanıcının seçimini iptal et
           int secilenSecenek = survey['secilenSecenek'];
-          // Oy sayisini azalt
           survey['oylar'][secilenSecenek]--;
-          // Anket degerlerini sifirla
           survey['oyVerildi'] = false;
           survey['secilenSecenek'] = null;
         }
       }
     });
     
-    // Kullaniciyi bilgilendir
+    // Kullanıcıyı bilgilendir
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Kaydedilmemis secimleriniz iptal edildi')),
+      SnackBar(content: Text('Kaydedilmemiş seçimleriniz iptal edildi')),
     );
   }
 
-  // Tum oylari kaydet
+  /// Tüm oyları blockchain'e kaydeder
   void _saveAllVotes() async {
-    if (userId == null) return; // Kullanici giris yapmamissa islem yapma
+    if (userId == null) return;
     
-    // Kaydedilecek tum anketleri topla
+    // Kaydedilecek tüm anketleri topla
     List<Map<String, dynamic>> votesToSave = [];
     
     for (int i = 0; i < surveys.length; i++) {
@@ -522,41 +553,96 @@ class SurveyPageState extends State<SurveyPage> {
     }
     
     if (votesToSave.isEmpty) {
-      // Henuz hicbir oy verilmemisse kullaniciyi bilgilendir
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Henuz hicbir anket icin oy vermediniz!')),
+        SnackBar(content: Text('Henüz hiçbir anket için oy vermediniz!')),
       );
       return;
     }
     
-    // Tum oylari kaydet
+    // İşlem sırasında progress indicator göster
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Oylarınız kaydediliyor...'),
+            ],
+          ),
+        );
+      },
+    );
+    
+    // Tüm oyları kaydet
     try {
-      // TODO: Blockchain entegrasyonu burada yapilacak
-      developer.log("Tum oylar kaydedildi: $votesToSave", name: 'survey_page');
+      // Blockchain entegrasyonu: Tüm oyları kaydet
+      bool success = await _blockchainService.saveBulkVotes(votesToSave);
       
-      // Kullaniciyi bilgilendir
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Tum secimleriniz basariyla kaydedildi.')),
-      );
+      // Dialog'u kapat
+      Navigator.of(context).pop();
       
-      // Oylarin degistirilememesi icin tum anketleri kilitle
-      setState(() {
-        for (var survey in surveys) {
-          if (survey['oyVerildi'] == true) {
-            survey['kilitlendi'] = true;
+      if (success) {
+        // Kullanıcıyı bilgilendir
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Tüm seçimleriniz başarıyla kaydedildi.'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+        
+        // Oyların değiştirilememesi için tüm anketleri kilitle
+        setState(() {
+          for (var survey in surveys) {
+            if (survey['oyVerildi'] == true) {
+              survey['kilitlendi'] = true;
+            }
           }
-        }
-      });
+        });
+      } else {
+        // Başarısız işlem
+        _showBlockchainErrorDialog();
+      }
     } catch (e) {
-      developer.log("Oy kaydedilirken hata: $e", name: 'survey_page');
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Oylar kaydedilirken bir hata olustu!')),
-      );
+      // Dialog'u kapat
+      Navigator.of(context).pop();
+      _showBlockchainErrorDialog();
     }
   }
+  
+  /// Blockchain hatası için dialog
+  void _showBlockchainErrorDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Kayıt Hatası'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Oylarınız kaydedilirken bir sorun oluştu.'),
+              SizedBox(height: 16),
+              Text('Lütfen daha sonra tekrar deneyiniz.'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Anladım'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
-  // Bilgi dialogunu goster
+  /// Anket bilgisi dialog penceresi
   void _showInfoDialog() {
     showDialog(
       context: context,
@@ -573,21 +659,21 @@ class SurveyPageState extends State<SurveyPage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('• Anketler profil bilgilerinize gore duzenlenmistir.'),
+              Text('• Anketler profil bilgilerinize göre düzenlenmiştir.'),
               SizedBox(height: 8),
-              Text('• Yasadiginiz il, yasiniz ve okulunuz gibi bilgiler anketlerin gosteriminde etkilidir.'),
+              Text('• Yaşadığınız il, yaşınız ve okulunuz gibi bilgiler anketlerin gösteriminde etkilidir.'),
               SizedBox(height: 8),
-              Text('• Profil bilgileriniz eksikse bazi anketleri goremeyebilirsiniz.'),
+              Text('• Seçimlerinizi kaydetmek için sağ üstteki kaydet butonuna tıklayın.'),
               SizedBox(height: 8),
-              Text('• Secimlerinizi kaydetmek icin sag ustteki disket ikonuna tiklayin.'),
+              Text('• Oylar kaydedildikten sonra değiştirilemez veya silinemez.'),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // Dialog'u kapat
+                Navigator.of(context).pop();
               },
-              child: Text('Anladim'),
+              child: Text('Anladım'),
             ),
           ],
         );

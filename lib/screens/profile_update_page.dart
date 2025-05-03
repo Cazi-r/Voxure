@@ -3,7 +3,6 @@ import '../services/firebase_service.dart';
 import '../widgets/custom_drawer.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'dart:developer' as developer;
 
 class ProfileUpdatePage extends StatefulWidget {
   @override
@@ -11,38 +10,26 @@ class ProfileUpdatePage extends StatefulWidget {
 }
 
 class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
-  // Firebase servisi
   final FirebaseService _firebaseService = FirebaseService();
-  
-  // Firestore referansı
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   
-  // Kullanıcı bilgisi
   User? currentUser;
   String? userEmail;
   String? tcKimlik;
   
-  // Isim ve soyisim icin deger tutucular
   TextEditingController _nameController = TextEditingController();
   TextEditingController _surnameController = TextEditingController();
   
-  // Il secimi icin deger tutucu
   String? selectedCity;
-  
-  // Okul secimi icin deger tutucu
   String? selectedSchool;
-  
-  // Dogum tarihi secimi icin deger tutucu
   DateTime? selectedDate;
   
-  // Sayfa yükleniyor mu kontrolü
   bool _isLoading = false;
   bool _isSaving = false;
   
-  // Son güncelleme tarihi
   DateTime? lastUpdateTime;
   
-  // Turkiye'deki illerin listesi
+  // Türkiye'deki illerin listesi
   final List<String> cities = [
     'Adana', 'Adıyaman', 'Afyonkarahisar', 'Ağrı', 'Aksaray', 'Amasya', 'Ankara', 'Antalya',
     'Ardahan', 'Artvin', 'Aydın', 'Balıkesir', 'Bartın', 'Batman', 'Bayburt', 'Bilecik',
@@ -56,7 +43,6 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
     'Tekirdağ', 'Tokat', 'Trabzon', 'Tunceli', 'Uşak', 'Van', 'Yalova', 'Yozgat', 'Zonguldak'
   ];
   
-  // Universiteler
   final List<String> schools = [
     'Okumuyorum',
     'Altınbaş Üniversitesi',
@@ -93,25 +79,21 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
     super.dispose();
   }
   
-  // Kullanıcı bilgilerini yükle
   void _loadUserInfo() async {
     setState(() {
       _isLoading = true;
     });
     
     try {
-      // Mevcut kullanıcıyı al
       currentUser = _firebaseService.getCurrentUser();
       
       if (currentUser != null) {
         userEmail = currentUser!.email;
         
-        // Email'den TC kimlik numarasını çıkar (ornek@example.com)
         if (userEmail != null) {
           tcKimlik = userEmail!.split('@')[0];
         }
         
-        // Kullanıcı profil bilgilerini Firestore'dan al
         DocumentSnapshot userDoc = await _firestore
             .collection('users')
             .doc(currentUser!.uid)
@@ -120,20 +102,17 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
         if (userDoc.exists) {
           Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
           
-          // Tarih bilgisini Timestamp'den DateTime'a çevir
           Timestamp? birthDateTimestamp = userData['birthDate'] as Timestamp?;
           if (birthDateTimestamp != null) {
             selectedDate = birthDateTimestamp.toDate();
           }
           
-          // Son güncelleme tarihini al
           Timestamp? updatedAtTimestamp = userData['updatedAt'] as Timestamp?;
           if (updatedAtTimestamp != null) {
             lastUpdateTime = updatedAtTimestamp.toDate();
           }
           
           setState(() {
-            // Mevcut verileri doldur
             _nameController.text = userData['name'] as String? ?? '';
             _surnameController.text = userData['surname'] as String? ?? '';
             selectedCity = userData['city'] as String?;
@@ -152,7 +131,6 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
         _showMessage("Hata", "Kullanıcı bilgisi bulunamadı.");
       }
     } catch (e) {
-      developer.log("Kullanıcı bilgileri yüklenirken hata: $e", name: 'profile_update');
       setState(() {
         _isLoading = false;
       });
@@ -160,9 +138,7 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
     }
   }
   
-  // Profil bilgilerini kaydet
   Future<void> _saveProfile() async {
-    // Bilgilerin tam olduğunu kontrol et
     if (_nameController.text.trim().isEmpty) {
       _showMessage("Eksik Bilgi", "Lütfen adınızı girin.");
       return;
@@ -188,18 +164,15 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
       return;
     }
     
-    // 6 ayda sadece bir kez güncelleme yapılabilmesi için kontrol
     if (lastUpdateTime != null) {
       final now = DateTime.now();
       
-      // Son güncelleme tarihine 6 ay ekle
       final DateTime nextAllowedUpdate = DateTime(
         lastUpdateTime!.year + ((lastUpdateTime!.month + 6) > 12 ? 1 : 0),
         ((lastUpdateTime!.month + 6) % 12 == 0 ? 12 : (lastUpdateTime!.month + 6) % 12),
         lastUpdateTime!.day,
       );
       
-      // Şu anki tarih, izin verilen bir sonraki güncellemeden önce mi kontrol et
       if (now.isBefore(nextAllowedUpdate)) {
         _showMessage(
           "Güncelleme Sınırlaması", 
@@ -215,7 +188,6 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
     
     try {
       if (currentUser != null) {
-        // Firestore'a bilgileri kaydet
         await _firestore.collection('users').doc(currentUser!.uid).set({
           'tcKimlik': tcKimlik,
           'name': _nameController.text.trim(),
@@ -231,7 +203,7 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
         });
         
         _showMessage("Başarılı", "Profil bilgileriniz başarıyla güncellendi.", onDismissed: () {
-          Navigator.pop(context);  // Ana sayfaya dön
+          Navigator.pop(context);
         });
       } else {
         setState(() {
@@ -240,7 +212,6 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
         _showMessage("Hata", "Kullanıcı bilgisi bulunamadı.");
       }
     } catch (e) {
-      developer.log("Profil bilgileri kaydedilirken hata: $e", name: 'profile_update');
       setState(() {
         _isSaving = false;
       });

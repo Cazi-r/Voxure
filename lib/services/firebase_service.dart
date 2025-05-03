@@ -1,96 +1,81 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'dart:developer' as developer;
 
 class FirebaseService {
-  // Firebase kimlik dogrulama servisi
+  // Firebase kimlik doğrulama servisi
   final FirebaseAuth _auth = FirebaseAuth.instance;
   
-  // TC numarasini email formatina cevirir
+  // TC numarasını email formatına çevirir
   String _convertTcToEmail(String tcKimlik) {
     return "$tcKimlik@example.com";
   }
   
-  // Kullanici kayit islemi - sadece TC ve sifre
+  // Kullanıcı kayıt işlemi - sadece TC ve şifre
   Future<Map<String, dynamic>> registerUser({
     required String tcKimlik,
     required String sifre,
   }) async {
     try {
-      developer.log("KAYIT BASLIYOR... TC: $tcKimlik", name: 'firebase_service');
-      
-      // TC kimlik kontrolu
+      // TC kimlik kontrolü
       if (tcKimlik.length != 11 || !RegExp(r'^\d+$').hasMatch(tcKimlik)) {
-        developer.log("GECERSIZ TC: $tcKimlik", name: 'firebase_service');
         return {
           'success': false, 
-          'message': 'Gecersiz TC kimlik numarasi.'
+          'message': 'Geçersiz TC kimlik numarası.'
         };
       }
       
-      // Sifre kontrolu
+      // Şifre kontrolü
       if (sifre.length < 6) {
-        developer.log("SIFRE COK KISA: ${sifre.length}", name: 'firebase_service');
         return {
           'success': false, 
-          'message': 'Sifre en az 6 karakter olmalidir.'
+          'message': 'Şifre en az 6 karakter olmalıdır.'
         };
       }
       
       // Email formatı
       String email = _convertTcToEmail(tcKimlik);
-      developer.log("EMAIL FORMAT: $email", name: 'firebase_service');
       
-      // Kullanici olustur
+      // Kullanıcı oluştur
       try {
         UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
           email: email,
           password: sifre,
         );
         
-        developer.log("KAYIT BASARILI. UID: ${userCredential.user?.uid}", name: 'firebase_service');
-        
         return {
           'success': true,
-          'message': 'Kullanici basariyla kaydedildi.',
+          'message': 'Kullanıcı başarıyla kaydedildi.',
           'userId': userCredential.user!.uid
         };
       } on FirebaseAuthException catch (e) {
-        developer.log("FIREBASE AUTH HATASI: ${e.code} - ${e.message}", name: 'firebase_service');
-        
         // Bu kullanıcı zaten kayıtlı mı kontrol et
         if (e.code == 'email-already-in-use') {
           // Bu durumda kullanıcı zaten kayıtlı, direkt giriş yapmayı deneyelim
           try {
-            developer.log("KULLANICI ZATEN KAYITLI, GIRIS DENENIYOR", name: 'firebase_service');
-            
             UserCredential userCredential = await _auth.signInWithEmailAndPassword(
               email: email,
               password: sifre,
             );
             
-            developer.log("MEVCUT KULLANICI ILE GIRIS BASARILI", name: 'firebase_service');
-            
             return {
               'success': true,
-              'message': 'TC kimlik zaten kayitli, giris yapildi.',
+              'message': 'TC kimlik zaten kayıtlı, giriş yapıldı.',
               'userId': userCredential.user!.uid
             };
           } catch (loginError) {
-            developer.log("MEVCUT KULLANICI ILE GIRIS HATASI: $loginError", name: 'firebase_service');
             return {
               'success': false,
-              'message': 'Bu TC kimlik numarasi zaten kayitli ama giris yapilamadi. Dogru sifreyi girin.',
+              'message': 'Bu TC kimlik numarası zaten kayıtlı ama giriş yapılamadı. Doğru şifreyi girin.',
               'error': loginError.toString()
             };
           }
         }
         
-        String message = 'Kayit sirasinda bir hata olustu.';
+        String message = 'Kayıt sırasında bir hata oluştu.';
         
         if (e.code == 'weak-password') {
-          message = 'Daha guclu bir sifre secin.';
+          message = 'Daha güçlü bir şifre seçin.';
         } else if (e.code == 'invalid-email') {
-          message = 'Gecersiz bir TC kimlik formati.';
+          message = 'Geçersiz bir TC kimlik formatı.';
         }
         
         return {
@@ -100,63 +85,54 @@ class FirebaseService {
         };
       }
     } catch (e) {
-      developer.log("GENEL HATA: $e", name: 'firebase_service');
       return {
         'success': false,
-        'message': 'Beklenmeyen bir hata olustu.',
+        'message': 'Beklenmeyen bir hata oluştu.',
         'error': e.toString()
       };
     }
   }
   
-  // Kullanici giris islemi
+  // Kullanıcı giriş işlemi
   Future<Map<String, dynamic>> loginUser({
     required String tcKimlik,
     required String sifre,
   }) async {
     try {
-      developer.log("GIRIS DENENIYOR... TC: $tcKimlik", name: 'firebase_service');
-      
-      // TC kimlik kontrolu
+      // TC kimlik kontrolü
       if (tcKimlik.length != 11 || !RegExp(r'^\d+$').hasMatch(tcKimlik)) {
-        developer.log("GECERSIZ TC: $tcKimlik", name: 'firebase_service');
         return {
           'success': false, 
-          'message': 'Gecersiz TC kimlik numarasi.'
+          'message': 'Geçersiz TC kimlik numarası.'
         };
       }
       
       // Email formatı
       String email = _convertTcToEmail(tcKimlik);
-      developer.log("EMAIL FORMAT: $email", name: 'firebase_service');
       
-      // Giris yap
+      // Giriş yap
       try {
         UserCredential userCredential = await _auth.signInWithEmailAndPassword(
           email: email,
           password: sifre,
         );
         
-        developer.log("GIRIS BASARILI. UID: ${userCredential.user?.uid}", name: 'firebase_service');
-        
         return {
           'success': true,
-          'message': 'Giris basarili.',
+          'message': 'Giriş başarılı.',
           'userId': userCredential.user!.uid
         };
       } on FirebaseAuthException catch (e) {
-        developer.log("FIREBASE AUTH HATASI: ${e.code} - ${e.message}", name: 'firebase_service');
-        
-        String message = 'Giris sirasinda bir hata olustu.';
+        String message = 'Giriş sırasında bir hata oluştu.';
         
         if (e.code == 'user-not-found') {
-          message = 'Bu TC kimlik numarasina sahip kullanici bulunamadi.';
+          message = 'Bu TC kimlik numarasına sahip kullanıcı bulunamadı.';
         } else if (e.code == 'wrong-password') {
-          message = 'Hatali sifre.';
+          message = 'Hatalı şifre.';
         } else if (e.code == 'invalid-email') {
-          message = 'Gecersiz bir TC kimlik formati.';
+          message = 'Geçersiz bir TC kimlik formatı.';
         } else if (e.code == 'user-disabled') {
-          message = 'Bu kullanici hesabi devre disi birakilmis.';
+          message = 'Bu kullanıcı hesabı devre dışı bırakılmış.';
         }
         
         return {
@@ -166,64 +142,57 @@ class FirebaseService {
         };
       }
     } catch (e) {
-      developer.log("GENEL HATA: $e", name: 'firebase_service');
       return {
         'success': false,
-        'message': 'Beklenmeyen bir hata olustu.',
+        'message': 'Beklenmeyen bir hata oluştu.',
         'error': e.toString()
       };
     }
   }
   
-  // Kullanici cikis islemi
+  // Kullanıcı çıkış işlemi
   Future<Map<String, dynamic>> signOut() async {
     try {
       await _auth.signOut();
-      developer.log("CIKIS BASARILI", name: 'firebase_service');
       return {
         'success': true,
-        'message': 'Cikis basarili.'
+        'message': 'Çıkış başarılı.'
       };
     } catch (e) {
-      developer.log("CIKIS HATASI: $e", name: 'firebase_service');
       return {
         'success': false,
-        'message': 'Cikis sirasinda bir hata olustu.',
+        'message': 'Çıkış sırasında bir hata oluştu.',
         'error': e.toString()
       };
     }
   }
   
-  // Kullanici kontrolu
+  // Kullanıcı kontrolü
   bool isUserLoggedIn() {
     final bool loggedIn = _auth.currentUser != null;
-    developer.log("OTURUM KONTROLU: $loggedIn", name: 'firebase_service');
     return loggedIn;
   }
   
-  // Mevcut kullaniciyi getir
+  // Mevcut kullanıcıyı getir
   User? getCurrentUser() {
     return _auth.currentUser;
   }
   
-  // Sifre sifirlama
+  // Şifre sıfırlama
   Future<Map<String, dynamic>> resetPassword(String tcKimlik) async {
     try {
-      developer.log("SIFRE SIFIRLAMA DENENIYOR... TC: $tcKimlik", name: 'firebase_service');
       await _auth.sendPasswordResetEmail(
         email: _convertTcToEmail(tcKimlik),
       );
       
-      developer.log("SIFRE SIFIRLAMA MAILI GONDERILDI", name: 'firebase_service');
       return {
         'success': true,
-        'message': 'Sifre sifirlama baglantisi gonderildi.'
+        'message': 'Şifre sıfırlama bağlantısı gönderildi.'
       };
     } catch (e) {
-      developer.log("SIFRE SIFIRLAMA HATASI: $e", name: 'firebase_service');
       return {
         'success': false,
-        'message': 'Sifre sifirlama islemi basarisiz.',
+        'message': 'Şifre sıfırlama işlemi başarısız.',
         'error': e.toString()
       };
     }

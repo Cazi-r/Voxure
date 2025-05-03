@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../services/firebase_service.dart';
-import 'dart:developer' as developer;
 import 'package:flutter/services.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -9,18 +8,13 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
-  // Firebase servisi
   final FirebaseService _firebaseService = FirebaseService();
   
-  // Form alanlari icin controller'lar
   final tcController = TextEditingController();
   final sifreController = TextEditingController();
   final sifreTekrarController = TextEditingController();
   
-  // Yukleniyor durumu
   bool _isLoading = false;
-  
-  // Kayit asamasi
   String _loadingMessage = "Kayıt olunuyor...";
 
   @override
@@ -36,13 +30,11 @@ class _RegisterPageState extends State<RegisterPage> {
       ),
       body: Stack(
         children: [
-          // Ana içerik - her zaman görünür
           SingleChildScrollView(
             padding: EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Logo ve baslik
                 Center(
                   child: Column(
                     children: [
@@ -67,7 +59,6 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                 ),
                 
-                // Bilgi mesaji
                 Container(
                   padding: EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -103,7 +94,6 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 SizedBox(height: 24),
                 
-                // TC Kimlik No
                 TextField(
                   controller: tcController,
                   decoration: InputDecoration(
@@ -115,12 +105,11 @@ class _RegisterPageState extends State<RegisterPage> {
                   maxLength: 11,
                   textInputAction: TextInputAction.next,
                   inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly, // Sadece rakam girişine izin verir
+                    FilteringTextInputFormatter.digitsOnly,
                   ],
                 ),
                 SizedBox(height: 20),
                 
-                // Sifre
                 TextField(
                   controller: sifreController,
                   obscureText: true,
@@ -133,7 +122,6 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 SizedBox(height: 20),
                 
-                // Sifre Tekrar
                 TextField(
                   controller: sifreTekrarController,
                   obscureText: true,
@@ -145,7 +133,6 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 SizedBox(height: 30),
                 
-                // Kayit Ol Butonu
                 ElevatedButton(
                   onPressed: _registerUser,
                   style: ElevatedButton.styleFrom(
@@ -159,7 +146,6 @@ class _RegisterPageState extends State<RegisterPage> {
             ),
           ),
           
-          // Loading overlay - sadece _isLoading true ise görünür
           if (_isLoading)
             Container(
               width: double.infinity,
@@ -204,15 +190,12 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
   
-  // Kayit islemi
   void _registerUser() async {
-    // TC kimlik kontrolu
     if (!_isValidTc(tcController.text)) {
       _showMessage("Hata", "Geçerli bir TC kimlik numarası giriniz.");
       return;
     }
     
-    // Sifre kontrolu
     if (sifreController.text.isEmpty) {
       _showMessage("Hata", "Şifre boş bırakılamaz.");
       return;
@@ -228,81 +211,58 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
     
-    // Yukleniyor gostergesi
     setState(() {
       _isLoading = true;
       _loadingMessage = "Kayıt olunuyor...";
     });
     
-    // Gorsel etki icin biraz bekleme
-    await Future.delayed(Duration(milliseconds: 1500));
-    
     try {
-      developer.log("REGISTER_PAGE: Kayıt işlemi başladı. TC: ${tcController.text}", name: 'register_page');
-      
-      // Firebase'e kayit islemi
       Map<String, dynamic> result = await _firebaseService.registerUser(
         tcKimlik: tcController.text,
         sifre: sifreController.text,
       );
       
-      developer.log("REGISTER_PAGE: Kayıt cevabı: $result", name: 'register_page');
-      
-      // Giris asamasina gecis
       setState(() {
         _loadingMessage = "Giriş yapılıyor...";
       });
-      
-      // Gorsel etki icin biraz daha bekleme
-      await Future.delayed(Duration(milliseconds: 1500));
       
       setState(() {
         _isLoading = false;
       });
       
-      // Kullanici zaten oturum acmissa dogrudan ana sayfaya yonlendir
       if (_firebaseService.isUserLoggedIn()) {
         Navigator.pushReplacementNamed(context, '/home');
         return;
       }
       
       if (result['success']) {
-        // Basarili kayit mesaji
         _showMessage(
           "Kayıt Başarılı", 
           "Hesabınız başarıyla oluşturuldu.",
           onPressed: () {
-            // Ana sayfaya yonlendir
             Navigator.pushReplacementNamed(context, '/home');
           }
         );
       } else {
-        // Hata mesaji
         String errorMessage = result['message'] ?? "Bilinmeyen hata";
         
-        // Eger kullanici zaten kayitli ve giris yapildiysa ana sayfaya yonlendir
         if (errorMessage.contains('zaten kayıtlı, giriş yapıldı')) {
           _showMessage(
             "Dikkat", 
             errorMessage,
             onPressed: () {
-              // Ana sayfaya yonlendir
               Navigator.pushReplacementNamed(context, '/home');
             }
           );
         } else {
-          // Normal hata mesaji
           _showMessage("Kayıt Hatası", errorMessage);
         }
       }
     } catch (e) {
-      developer.log("REGISTER_PAGE: Beklenmeyen hata: $e", name: 'register_page');
-      
       setState(() {
         _isLoading = false;
       });
       
-      // Firebase Auth kullanicisi oturum acmissa, hata olsa bile basarili kabul et
       if (_firebaseService.isUserLoggedIn()) {
         _showMessage(
           "Kayıt Başarılı", 
@@ -312,13 +272,11 @@ class _RegisterPageState extends State<RegisterPage> {
           }
         );
       } else {
-        // Hata mesaji
         _showMessage("Beklenmeyen Hata", "Kayıt sırasında bir hata oluştu. Lütfen tekrar deneyin.");
       }
     }
   }
   
-  // Mesaj gosterme
   void _showMessage(String title, String message, {Function()? onPressed}) {
     showDialog(
       context: context,
@@ -337,12 +295,10 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
   
-  // TC kimlik numarası geçerlilik kontrolü
   bool _isValidTc(String? tc) {
     if (tc == null || tc.isEmpty) return false;
     if (tc.length != 11) return false;
     if (tc[0] == '0') return false;
-    // Sadece rakam içerip içermediğini kontrol et
     if (!RegExp(r'^[0-9]+$').hasMatch(tc)) return false;
     return true;
   }
