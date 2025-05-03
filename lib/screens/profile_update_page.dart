@@ -188,6 +188,27 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
       return;
     }
     
+    // 6 ayda sadece bir kez güncelleme yapılabilmesi için kontrol
+    if (lastUpdateTime != null) {
+      final now = DateTime.now();
+      
+      // Son güncelleme tarihine 6 ay ekle
+      final DateTime nextAllowedUpdate = DateTime(
+        lastUpdateTime!.year + ((lastUpdateTime!.month + 6) > 12 ? 1 : 0),
+        ((lastUpdateTime!.month + 6) % 12 == 0 ? 12 : (lastUpdateTime!.month + 6) % 12),
+        lastUpdateTime!.day,
+      );
+      
+      // Şu anki tarih, izin verilen bir sonraki güncellemeden önce mi kontrol et
+      if (now.isBefore(nextAllowedUpdate)) {
+        _showMessage(
+          "Güncelleme Sınırlaması", 
+          "Profil bilgilerinizi 6 ayda sadece bir kez güncelleyebilirsiniz. Lütfen ${nextAllowedUpdate.day}/${nextAllowedUpdate.month}/${nextAllowedUpdate.year} tarihinden sonra tekrar deneyin."
+        );
+        return;
+      }
+    }
+    
     setState(() {
       _isSaving = true;
     });
@@ -645,9 +666,19 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
               Text("Bilgi"),
             ],
           ),
-          content: Text(
-            "Girdiğiniz bilgilere göre size özel anketler getirilecektir.",
-            style: TextStyle(fontSize: 15),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("• Girdiginiz bilgilere gore size ozel anketler getirilecektir.",),
+              SizedBox(height: 8),
+              Text('• Yasadiginiz il, yasiniz ve okulunuz gibi bilgiler anketlerin gosteriminde etkilidir.'),
+              SizedBox(height: 8),
+              Text('• Profil bilgileriniz eksikse bazi anketleri goremeyebilirsiniz.'),
+              SizedBox(height: 8),
+              Text('• Profil bilgilerinizi 6 ayda sadece bir kez guncelleyebilirsiniz.', style: TextStyle(color: Colors.red)),
+              SizedBox(height: 8),
+            ],
           ),
           actions: [
             TextButton(

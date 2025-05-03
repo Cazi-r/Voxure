@@ -1,0 +1,2 @@
+C:/Users/panda/Desktop/Git-hub/Voxure/android/app/.cxx/RelWithDebInfo/6e2q6e62/x86/CMakeFiles/edit_cache.dir
+C:/Users/panda/Desktop/Git-hub/Voxure/android/app/.cxx/RelWithDebInfo/6e2q6e62/x86/CMakeFiles/rebuild_cache.dir
