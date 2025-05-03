@@ -175,15 +175,13 @@ class SurveyPageState extends State<SurveyPage> {
     try {
       if (userId == null) return;
       
-      // Tüm anket verilerini blockchain'den al
-      Map<String, Map<int, int>> allVotes = await _blockchainService.getAllSurveyVotes();
-      
-      // Kullanıcının kendi oylarını bulmak için tüm anketleri kontrol et
+      // Her anket için ayrı ayrı blockchain'den oy verilerini al
       for (var i = 0; i < surveys.length; i++) {
         String surveyId = surveys[i]['id'];
         
-        // Blockchain'den bu anket için oy verileri var mı kontrol et
+        // Blockchain'den bu anket için oy verileri al
         Map<int, int> voteData = await _blockchainService.getSurveyVotes(surveyId);
+        
         if (voteData.isNotEmpty) {
           // Tüm anket oylarını güncelle
           List<int> newVotes = List<int>.filled(surveys[i]['secenekler'].length, 0);
@@ -212,6 +210,7 @@ class SurveyPageState extends State<SurveyPage> {
         }
       }
     } catch (e) {
+      print('Blockchain verileri yuklenirken hata: $e');
       // Hata durumunda sessizce devam et
     }
   }
@@ -538,11 +537,11 @@ class SurveyPageState extends State<SurveyPage> {
   void _saveAllVotes() async {
     if (userId == null) return;
     
-    // Kaydedilecek tüm anketleri topla
+    // Kaydedilecek tüm anketleri topla (sadece kilitli olmayanlar)
     List<Map<String, dynamic>> votesToSave = [];
     
     for (int i = 0; i < surveys.length; i++) {
-      if (surveys[i]['oyVerildi'] == true) {
+      if (surveys[i]['oyVerildi'] == true && surveys[i]['kilitlendi'] != true) {
         votesToSave.add({
           'userId': userId,
           'surveyId': surveys[i]['id'],
@@ -554,7 +553,7 @@ class SurveyPageState extends State<SurveyPage> {
     
     if (votesToSave.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Henüz hiçbir anket için oy vermediniz!')),
+        SnackBar(content: Text('Kaydedilecek yeni bir seçiminiz bulunmamaktadır!')),
       );
       return;
     }
@@ -594,11 +593,11 @@ class SurveyPageState extends State<SurveyPage> {
           ),
         );
         
-        // Oyların değiştirilememesi için tüm anketleri kilitle
+        // Oyların değiştirilememesi için sadece kaydedilen anketleri kilitle
         setState(() {
-          for (var survey in surveys) {
-            if (survey['oyVerildi'] == true) {
-              survey['kilitlendi'] = true;
+          for (var i = 0; i < surveys.length; i++) {
+            if (surveys[i]['oyVerildi'] == true && surveys[i]['kilitlendi'] != true) {
+              surveys[i]['kilitlendi'] = true;
             }
           }
         });

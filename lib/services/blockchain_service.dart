@@ -1,102 +1,275 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'package:crypto/crypto.dart';
-import 'package:web3dart/web3dart.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:web3dart/web3dart.dart';
 
-/// BlockchainService: Oylama verilerini güvenli şekilde saklayan servis.
-/// 
-/// Bu servis, oylama verilerini hash'leyerek saklar ve doğrular.
-/// Veriler cihazda kalıcı olarak saklanır.
+/// BlockchainService: Oylama verilerini dogrudan Ganache blockchain uzerinde saklayan servis.
+///
+/// Bu servis, yerel Ganache blockchain emulatorunu kullanarak oy verilerini saklar.
+/// Veri kaliciligi SADECE blockchain uzerinde saglanir, yerel onbellek KULLANILMAZ.
 class BlockchainService {
-  // Mock blockchain modunda veriler
-  final Map<String, dynamic> _mockVotes = {}; // Geçici bellekte oyları saklar
-  static const String _votesStorageKey = 'blockchain_mock_votes'; // SharedPreferences anahtarı
+  // Ganache URL (platform'a gore otomatik ayarlanir)
+  late final String _blockchainUrl;
+  
+  // Web3 istemcisi
+  late final Web3Client _web3client;
+  
+  // Akilli sozlesme adresi - sozlesme deploy edildiginde buraya girin
+  
+  //  http://127.0.0.1:7545
+  static const String _contractAddress = '0x8FE6EC181F332555Fd1A265345405E67bcd99636';
+  
+  // Ethereum cuzdan bilgileri - Ganache'ten aldiginiz hesap ozel anahtarini buraya girin
+  static const String _adminPrivateKey = 'f534f62fd00b863f3b9c56730c3bec7a2048310f788bef99f8450d05c968ed40';
+  
+  // Akilli sozlesme ABI 
+  static const String _contractABI = '''
+[
+  {
+    "inputs": [],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "string",
+        "name": "surveyId",
+        "type": "string"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "voter",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "optionIndex",
+        "type": "uint256"
+      }
+    ],
+    "name": "VoteCast",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "surveyId",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "userId",
+        "type": "string"
+      }
+    ],
+    "name": "getUserVote",
+    "outputs": [
+      {
+        "internalType": "int256",
+        "name": "",
+        "type": "int256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "surveyId",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "optionIndex",
+        "type": "uint256"
+      }
+    ],
+    "name": "getVoteCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "surveyId",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "optionIndex",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "userId",
+        "type": "string"
+      }
+    ],
+    "name": "vote",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]
+''';
 
-  // Constructor - servisi başlat
-  BlockchainService() {
+  // Baslatma durumu
+  bool _isInitialized = false;
+  
+  // Singleton pattern
+  static final BlockchainService _instance = BlockchainService._internal();
+  
+  // Factory constructor
+  factory BlockchainService() {
+    return _instance;
+  }
+  
+  // Private constructor
+  BlockchainService._internal() {
     _initialize();
   }
-
-  // Servisi başlatma
+  
+  // Servisi baslat
   Future<void> _initialize() async {
-    try {
-      // Kaydedilmiş oyları yükle
-      await _loadSavedVotes();
-    } catch (e) {
-      // Hata durumunda sessizce devam et
-    }
-  }
-  
-  // Kaydedilmiş oyları SharedPreferences'tan yükler
-  Future<void> _loadSavedVotes() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      String? savedVotesJson = prefs.getString(_votesStorageKey);
-      
-      if (savedVotesJson != null && savedVotesJson.isNotEmpty) {
-        Map<String, dynamic> savedVotes = Map<String, dynamic>.from(
-          jsonDecode(savedVotesJson) as Map
-        );
+    if (!_isInitialized) {
+      try {
+        // Platform'a gore blockchain URL'ini belirle
+        _blockchainUrl = Platform.isAndroid
+            ? 'http://10.0.2.2:7545'  // Android emulator icin
+            : 'http://127.0.0.1:7545'; // iOS simulator veya desktop
         
-        // Kaydedilmiş oyları _mockVotes'a yükle
-        _mockVotes.clear();
-        savedVotes.forEach((key, value) {
-          _mockVotes[key] = value;
-        });
+        print('Blockchain URL: $_blockchainUrl');
+        
+        // Web3 istemcisini olustur
+        final httpClient = http.Client();
+        _web3client = Web3Client(_blockchainUrl, httpClient);
+        
+        // Blockchain ile baglanti testi
+        try {
+          final blockNumber = await _web3client.getBlockNumber();
+          print('Ganache baglantisi basarili. Guncel blok: $blockNumber');
+        } catch (e) {
+          print('Blockchain baglanti hatasi: $e');
+          throw Exception('Blockchain baglantisi kurulamadi. Lutfen Ganache calistigindan emin olun.');
+        }
+        
+        _isInitialized = true;
+      } catch (e) {
+        print('Blockchain servisi baslatilirken hata: $e');
+        rethrow; // Hatayi yeniden firlat
       }
-    } catch (e) {
-      // Hata durumunda sessizce devam et
     }
   }
   
-  // Oyları SharedPreferences'a kaydeder
-  Future<void> _saveVotesToStorage() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      String votesJson = jsonEncode(_mockVotes);
-      await prefs.setString(_votesStorageKey, votesJson);
-    } catch (e) {
-      // Hata durumunda sessizce devam et
-    }
+  // Akilli sozlesmeyi getir
+  DeployedContract _getDeployedContract() {
+    final contract = DeployedContract(
+      ContractAbi.fromJson(_contractABI, 'VoteContract'),
+      EthereumAddress.fromHex(_contractAddress),
+    );
+    return contract;
   }
-
-  // Oy verme işlemini kaydeder
+  
+  // Admin kimlik bilgilerini olustur
+  Credentials _getAdminCredentials() {
+    return EthPrivateKey.fromHex(_adminPrivateKey);
+  }
+  
+  // Oy verme islemini kaydet - SADECE blockchain'e yazar
   Future<bool> saveVote(Map<String, dynamic> voteData) async {
     try {
-      // Oy verisini JSON formatına dönüştür
-      final String voteJson = jsonEncode(voteData);
+      // Servisin baslatildigindan emin ol
+      if (!_isInitialized) {
+        await _initialize();
+      }
       
-      // Oy verisinin hash'ini oluştur
-      final String voteHash = sha256.convert(utf8.encode(voteJson)).toString();
+      final String surveyId = voteData['surveyId'] as String;
+      final int optionIndex = voteData['optionIndex'] as int;
+      final String userId = voteData['userId'] as String;
       
-      // Bu oy daha önce kaydedilmiş mi kontrol et
-      if (_mockVotes.containsKey(voteHash)) {
+      // Kullanici daha once oy vermis mi kontrol et
+      final userVote = await getUserVote(userId, surveyId);
+      if (userVote != null) {
+        print('Kullanici bu ankete zaten oy vermis: $userId, $surveyId');
         return false;
       }
       
-      // Oyu kaydet - tüm veriyi saklayalım ki istatistiklerden kullanabilelim
-      _mockVotes[voteHash] = voteData;
+      try {
+        // Akilli sozlesmeyi cagir - blockchain'e oy verme islemini gonder
+        final contract = _getDeployedContract();
+        final function = contract.function('vote');
+        
+        // Admin kimlik bilgileri
+        final credentials = _getAdminCredentials();
+        
+        // Islemi gonder - senkron olarak bekle
+        final transaction = await _web3client.sendTransaction(
+          credentials,
+          Transaction.callContract(
+            contract: contract,
+            function: function,
+            parameters: [surveyId, BigInt.from(optionIndex), userId],
+          ),
+          chainId: 1337, // Ganache icin chain ID
+        );
+        
+        print('Oy islemi blockchain\'e gonderildi, TX: $transaction');
+        return true;
+        
+      } catch (e) {
+        print('Blockchain\'e islem gonderilirken hata: $e');
+        return false;
+      }
       
-      // Verileri kalıcı olarak kaydet
-      await _saveVotesToStorage();
-      
-      // İşlemi simüle etmek için kısa bir gecikme
-      await Future.delayed(Duration(milliseconds: 300));
-      return true;
     } catch (e) {
+      print('Oy kaydedilirken hata: $e');
       return false;
     }
   }
-
-  // Toplu oyları kaydeder
+  
+  // Toplu oy verme islemini kaydet
   Future<bool> saveBulkVotes(List<Map<String, dynamic>> votesData) async {
     try {
+      // Servisin baslatildigindan emin ol
+      if (!_isInitialized) {
+        await _initialize();
+      }
+      
       bool allSuccessful = true;
       
-      // Her oy için ayrı işlem
+      // Her oy icin kayit olustur
       for (var voteData in votesData) {
-        bool success = await saveVote(voteData);
+        final bool success = await saveVote(voteData);
         if (!success) {
           allSuccessful = false;
         }
@@ -104,103 +277,116 @@ class BlockchainService {
       
       return allSuccessful;
     } catch (e) {
-      return false;
-    }
-  }
-
-  // Oyun kaydedilmiş olup olmadığını doğrular
-  Future<bool> verifyVote(Map<String, dynamic> voteData) async {
-    try {
-      // Oy verisini JSON formatına dönüştür
-      final String voteJson = jsonEncode(voteData);
-      
-      // Oy verisinin hash'ini oluştur
-      final String voteHash = sha256.convert(utf8.encode(voteJson)).toString();
-      
-      // Oy veritabanında var mı kontrol et
-      return _mockVotes.containsKey(voteHash);
-    } catch (e) {
+      print('Toplu oy kaydedilirken hata: $e');
       return false;
     }
   }
   
-  // İstatistik sayfası için tüm anketlerin oy verilerini döndürür
-  Future<Map<String, Map<int, int>>> getAllSurveyVotes() async {
-    // Sonuç formatı: {'anket_id': {0: 5, 1: 10, 2: 3}, ...}
-    // Burada 0, 1, 2 seçenek indeksleri, yanındaki değerler oy sayılarıdır
-    
-    Map<String, Map<int, int>> allVotes = {};
-    
-    try {
-      // Önce SharedPreferences'tan güncel verileri yükleyelim
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        String? savedVotesJson = prefs.getString(_votesStorageKey);
-        
-        if (savedVotesJson != null && savedVotesJson.isNotEmpty) {
-          // Bellekteki mock votes'u SharedPreferences'tan gelen verilerle güncelleyelim
-          _mockVotes.clear();
-          Map<String, dynamic> savedVotes = jsonDecode(savedVotesJson) as Map<String, dynamic>;
-          _mockVotes.addAll(savedVotes.map((key, value) => MapEntry(key, value)));
-        }
-      } catch (e) {
-        // SharedPreferences hatası - sessizce devam et
-      }
-      
-      // Tüm kaydedilen oyları tara
-      _mockVotes.forEach((hash, value) {
-        try {
-          // Veri çıkarma
-          final Map<String, dynamic> voteData = value as Map<String, dynamic>;
-          final String surveyId = voteData['surveyId'] as String;
-          final int optionIndex = voteData['optionIndex'] as int;
-          
-          // Anket için oy mapini oluştur veya mevcut olanı al
-          if (!allVotes.containsKey(surveyId)) {
-            allVotes[surveyId] = {};
-          }
-          
-          // Seçenek için oy sayısını artır
-          allVotes[surveyId]![optionIndex] = (allVotes[surveyId]![optionIndex] ?? 0) + 1;
-        } catch (e) {
-          // Veri işleme hatası - bu veriyi atla
-        }
-      });
-    } catch (e) {
-      // Genel hata - boş sonuç döndür
-    }
-    
-    return allVotes;
-  }
-  
-  // Belirli bir anketin oy verilerini döndürür
+  // Bir anket icin oy verilerini getir - HER SEFERINDE BLOCKCHAIN'DEN ALIR
   Future<Map<int, int>> getSurveyVotes(String surveyId) async {
-    Map<int, int> voteCount = {};
-    Map<String, Map<int, int>> allVotes = await getAllSurveyVotes();
-    
-    if (allVotes.containsKey(surveyId)) {
-      return allVotes[surveyId]!;
+    // Servisin baslatildigindan emin ol
+    if (!_isInitialized) {
+      await _initialize();
     }
     
-    return voteCount; // Boş map döner (oy yoksa)
-  }
-  
-  // Belirli bir kullanıcının belirli bir anketteki oy bilgisini döndürür
-  Future<Map<String, dynamic>?> getUserVote(String userId, String surveyId) async {
     try {
-      // Tüm kaydedilen oyları tara
-      for (var entry in _mockVotes.entries) {
-        if (entry.value is Map<String, dynamic>) {
-          Map<String, dynamic> voteData = entry.value as Map<String, dynamic>;
-          // userId ve surveyId eşleşen oyu bul
-          if (voteData['userId'] == userId && voteData['surveyId'] == surveyId) {
-            return voteData; // Kullanıcının bu anket için oy bilgisini döndür
+      Map<int, int> voteCount = {};
+      
+      // Blockchain'den oy sayilarini al
+      final contract = _getDeployedContract();
+      final function = contract.function('getVoteCount');
+      
+      // 10 secenege kadar destek var
+      for (int i = 0; i < 10; i++) {
+        try {
+          final result = await _web3client.call(
+            contract: contract, 
+            function: function, 
+            params: [surveyId, BigInt.from(i)]
+          );
+          
+          if (result.isNotEmpty && result[0] is BigInt) {
+            final count = (result[0] as BigInt).toInt();
+            if (count > 0) {
+              voteCount[i] = count;
+            }
           }
+        } catch (e) {
+          // Secenekte oy yoksa veya baska bir hata olursa devam et
         }
       }
-      return null; // Oy bulunamadı
+      
+      return voteCount;
     } catch (e) {
+      print('Anket oylari alinirken hata: $e');
+      return {};
+    }
+  }
+  
+  // Kullanicinin belirli bir anketteki oyunu getir - HER SEFERINDE BLOCKCHAIN'DEN ALIR
+  Future<Map<String, dynamic>?> getUserVote(String userId, String surveyId) async {
+    // Servisin baslatildigindan emin ol
+    if (!_isInitialized) {
+      await _initialize();
+    }
+    
+    try {
+      // Blockchain'den kullanicinin oyunu sorgula
+      final contract = _getDeployedContract();
+      final function = contract.function('getUserVote');
+      
+      final result = await _web3client.call(
+        contract: contract, 
+        function: function, 
+        params: [surveyId, userId]
+      );
+      
+      if (result.isNotEmpty && result[0] is BigInt) {
+        final optionIndex = (result[0] as BigInt).toInt();
+        
+        // -1 degeri oy verilmedigini gosterir
+        if (optionIndex >= 0) {
+          return {
+            'userId': userId,
+            'surveyId': surveyId,
+            'optionIndex': optionIndex,
+          };
+        }
+      }
+      
+      return null; // Kullanici oy vermemis
+    } catch (e) {
+      print('Kullanici oyu alinirken hata: $e');
       return null;
+    }
+  }
+  
+  // Oy verme islemini dogrula - DOGRUDAN BLOCKCHAIN'DEN KONTROL EDER
+  Future<bool> verifyVote(Map<String, dynamic> voteData) async {
+    final userId = voteData['userId'] as String;
+    final surveyId = voteData['surveyId'] as String;
+    final optionIndex = voteData['optionIndex'] as int;
+    
+    final userVote = await getUserVote(userId, surveyId);
+    
+    if (userVote != null && userVote['optionIndex'] == optionIndex) {
+      return true;
+    }
+    
+    return false;
+  }
+  
+  // Blockchain baglanti durumunu kontrol et
+  Future<bool> isConnected() async {
+    try {
+      if (!_isInitialized) {
+        await _initialize();
+      }
+      
+      await _web3client.getBlockNumber();
+      return true;
+    } catch (e) {
+      return false;
     }
   }
 } 

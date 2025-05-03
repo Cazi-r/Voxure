@@ -1,58 +1,65 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+/// @title VoteContract
+/// @notice Oylama verilerini blockchain'de saklayan akıllı sözleşme
 contract VoteContract {
-    // Kontrat sahibi
+    // Contract sahibi
     address public owner;
     
-    // Kaydedilmis oylarin hash'leri
-    mapping(string => bool) private voteHashes;
+    // Anket ID'si => Seçenek => Oy sayısı
+    mapping(string => mapping(uint256 => uint256)) private votes;
     
-    // Toplam oy sayisi
-    uint256 public totalVotes;
+    // Kullanıcı ID'si => Anket ID'si => Oy verilen seçenek (-1: oy verilmemiş)
+    mapping(string => mapping(string => int256)) private userVotes;
     
-    // Oyun kaydedildigi zaman tetiklenen olay
-    event VoteCasted(string voteHash, uint256 timestamp);
+    // VoteCast olayı
+    event VoteCast(string indexed surveyId, address indexed voter, uint256 optionIndex);
     
-    // Kontrat olusturuldugunda calisacak constructor
+    // Constructor
     constructor() {
         owner = msg.sender;
-        totalVotes = 0;
     }
     
-    // Sadece kontrat sahibinin cagirabileceği fonksiyonlar icin modifier
+    // Yetki kontrolü
     modifier onlyOwner() {
-        require(msg.sender == owner, "Not authorized");
+        require(msg.sender == owner, "Only owner can call this function");
         _;
     }
     
-    // Oy verme fonksiyonu
-    function castVote(string memory voteHash) public {
-        // Ayni hash ile daha once oy verilip verilmedigini kontrol et
-        require(!voteHashes[voteHash], "This vote has already been cast");
+    /// @notice Kullanıcının bir ankete oy vermesini sağlar
+    /// @param surveyId Anket ID'si
+    /// @param optionIndex Seçenek numarası
+    /// @param userId Kullanıcı ID'si
+    function vote(string memory surveyId, uint256 optionIndex, string memory userId) public {
+        // Kullanıcı daha önce oy vermiş mi kontrol et
+        require(userVotes[userId][surveyId] == 0, "User already voted for this survey");
         
-        // Oyu kaydet
-        voteHashes[voteHash] = true;
+        // Oy kaydet
+        votes[surveyId][optionIndex]++;
+        userVotes[userId][surveyId] = int256(optionIndex + 1); // 1-tabanlı saklama (0 = hiç oy vermemiş)
         
-        // Toplam oy sayisini artir
-        totalVotes++;
-        
-        // Olay tetikle
-        emit VoteCasted(voteHash, block.timestamp);
+        // Olayı bildir
+        emit VoteCast(surveyId, msg.sender, optionIndex);
     }
     
-    // Oyun daha once verilip verilmedigini kontrol et
-    function verifyVote(string memory voteHash) public view returns (bool) {
-        return voteHashes[voteHash];
+    /// @notice Bir seçeneğin aldığı oy sayısını getirir
+    /// @param surveyId Anket ID'si
+    /// @param optionIndex Seçenek numarası
+    /// @return Oy sayısı
+    function getVoteCount(string memory surveyId, uint256 optionIndex) public view returns (uint256) {
+        return votes[surveyId][optionIndex];
     }
     
-    // Toplam oy sayisini getir
-    function getTotalVotes() public view returns (uint256) {
-        return totalVotes;
-    }
-    
-    // Sadece kontrat sahibinin cagirabileceği acil durum fonksiyonu
-    function emergencyStop() public onlyOwner {
-        selfdestruct(payable(owner));
+    /// @notice Kullanıcının hangi seçeneğe oy verdiğini getirir
+    /// @param surveyId Anket ID'si
+    /// @param userId Kullanıcı ID'si
+    /// @return Oy verilen seçenek (-1: oy verilmemiş)
+    function getUserVote(string memory surveyId, string memory userId) public view returns (int256) {
+        int256 voteValue = userVotes[userId][surveyId];
+        if (voteValue == 0) {
+            return -1; // Oy vermemiş
+        }
+        return voteValue - 1; // 0-tabanlı değere dönüştür
     }
 } 

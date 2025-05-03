@@ -75,34 +75,28 @@ class StatisticsPageState extends State<StatisticsPage> {
     });
 
     try {
-      // Blockchain servisinden tüm anketlerin verilerini al
-      Map<String, Map<int, int>> allVotes = await _blockchainService.getAllSurveyVotes();
-      
-      // Tüm anketleri güncelle
-      setState(() {
-        for (int i = 0; i < surveys.length; i++) {
-          String surveyId = surveys[i]['id'];
-          
-          // Bu anket için oy verileri var mı?
-          if (allVotes.containsKey(surveyId)) {
-            Map<int, int> voteData = allVotes[surveyId]!;
-            
-            // Oy sayılarını sıfırla
-            List<int> newVotes = List<int>.filled(surveys[i]['secenekler'].length, 0);
-            
-            // Blockchain'den gelen oy verilerini işle
-            voteData.forEach((optionIndex, count) {
-              if (optionIndex >= 0 && optionIndex < newVotes.length) {
-                newVotes[optionIndex] = count;
-              }
-            });
-            
-            // Anket verilerini güncelle
-            surveys[i]['oylar'] = newVotes;
+      // Her anket için ayrı ayrı blockchain'den verileri al
+      for (int i = 0; i < surveys.length; i++) {
+        String surveyId = surveys[i]['id'];
+        
+        // Bu anket için oy verilerini al
+        Map<int, int> voteData = await _blockchainService.getSurveyVotes(surveyId);
+        
+        // Oy sayılarını sıfırla
+        List<int> newVotes = List<int>.filled(surveys[i]['secenekler'].length, 0);
+        
+        // Blockchain'den gelen oy verilerini işle
+        voteData.forEach((optionIndex, count) {
+          if (optionIndex >= 0 && optionIndex < newVotes.length) {
+            newVotes[optionIndex] = count;
           }
-        }
-      });
+        });
+        
+        // Anket verilerini güncelle
+        surveys[i]['oylar'] = newVotes;
+      }
     } catch (e) {
+      print('Blockchain verileri yuklenirken hata: $e');
       // Hata durumunda sessizce devam et
     } finally {
       setState(() {
