@@ -18,10 +18,10 @@ class BlockchainService {
   // Akilli sozlesme adresi - sozlesme deploy edildiginde buraya girin
   
   //  http://127.0.0.1:7545
-  static const String _contractAddress = '0x8FE6EC181F332555Fd1A265345405E67bcd99636';
+  static const String _contractAddress = '0xe985017640F833E66FbEEa95B3C098581EACeBB3';
   
   // Ethereum cuzdan bilgileri - Ganache'ten aldiginiz hesap ozel anahtarini buraya girin
-  static const String _adminPrivateKey = 'f534f62fd00b863f3b9c56730c3bec7a2048310f788bef99f8450d05c968ed40';
+  static const String _adminPrivateKey = 'cc2d1f7b69292626d53fe3a95874bc13c8da2857c986ae20496424f6ff37e2c4';
   
   // Akilli sozlesme ABI 
   static const String _contractABI = '''

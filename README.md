@@ -1,60 +1,100 @@
 # Voxure - Blockchain Destekli Oylama Sistemi
 
-## Genel Bakış
+## Genel Bakis
 
-Voxure, demografik verilere göre filtrelenmiş anketlerin sunulduğu ve oyların güvenilir bir şekilde blockchain üzerinde kaydedildiği bir Flutter uygulamasıdır. Uygulama, kullanıcı kimlik doğrulama ve yetkilendirme için Firebase Authentication, kullanıcı profil verilerini saklamak için Firebase Firestore, ve oyları değiştirilemez şekilde kaydetmek için Ethereum blockchain kullanmaktadır.
+Voxure, demografik verilere gore filtrelenmis anketlerin sunuldugu ve oylarin guvenilir bir sekilde blockchain uzerinde kaydedildigi bir mobil uygulamadir. Bu sistem, geleneksel oylama sistemlerindeki guvenlik ve seffaflik sorunlarini cozmeyi amaclamaktadir.
+
+## Ozellikler
+
+- **Guvenli Kimlik Dogrulama**: Firebase Authentication ile guvenli kullanici girisi ve kayit
+- **Blockchain Tabanli Oylama**: Oylarin degistirilemez sekilde Ethereum blockchain'inde saklanmasi
+- **Demografik Filtreleme**: Kullanicilara yas, cinsiyet, egitim durumu gibi demografik ozelliklerine gore uygun anketlerin gosterilmesi
+- **Istatistik Goruntuleme**: Anket sonuclarinin grafikler ile gosterilmesi
+- **Cok Dilli Destek**: Turkce ve Ingilizce dil destegi
+
+## Teknoloji Yigini
+
+- **Frontend**: Flutter (Dart)
+- **Kimlik Dogrulama ve Veritabani**: Firebase (Authentication, Firestore)
+- **Blockchain**: Ethereum (web3dart)
+- **Coklu Dil Destegi**: Flutter Localization
+
+## Baslangic
+
+### Gereksinimler
+
+- Flutter SDK (en son surum)
+- Dart SDK (en son surum)
+- Firebase hesabi
+- Ethereum cuzdan (Metamask onerilir)
+- Infura API anahtari (blockchain erisimi icin)
+
+### Kurulum
+
+1. Projeyi klonlayin:
+```bash
+git clone https://github.com/kullaniciadi/voxure.git
+cd voxure
+```
+
+2. Bagimli paketleri yukleyin:
+```bash
+flutter pub get
+```
+
+3. Firebase yapilandirmasini tamamlayin:
+   - Firebase konsolunda yeni bir proje olusturun
+   - Flutter uygulamanizi Firebase'e ekleyin
+   - Authentication ve Firestore hizmetlerini etkinlestirin
+
+4. Ethereum ayarlarini yapin:
+   - lib/services/blockchain_service.dart dosyasindaki Infura API anahtarinizi guncelleyin
+   - Akilli kontrat adresi ve ABI'yi ayarlayin
+
+5. Uygulamayi calistirin:
+```bash
+flutter run
+```
 
 ## Blockchain Entegrasyonu
 
-Oylar, şeffaflık ve değiştirilemezlik ilkelerine dayalı olarak Ethereum blockchain'inde saklanır. Her oy, aşağıdaki avantajlara sahip şekilde kaydedilir:
+Voxure, oylarin degistirilemezligini ve seffafligini saglamak icin Ethereum blockchain teknolojisini kullanir:
 
-- **Değiştirilemezlik**: Bir kez kaydedilen oy değiştirilemez
-- **Şeffaflık**: Tüm oylar, gizlilik korunarak herkes tarafından doğrulanabilir
-- **Güvenilirlik**: Merkezi olmayan yapı, tek bir hata noktasını ortadan kaldırır
+- Her oy, kullanici bilgileri gizlenerek blockchain uzerinde saklanir
+- Akilli kontratlar sayesinde oylar, degistirilemez ve dogrulanabilir
+- Web3dart kutuphanesi kullanilarak Ethereum agina baglanilir
 
-## Kurulum ve Gereksinimler
+## Guvenlik Ozellikleri
 
-Projeyi çalıştırmak için aşağıdaki adımları izleyin:
+- Kullanici kimlik bilgileri Firebase Authentication ile guvenli sekilde saklanir
+- Blockchain'de saklanan veriler kriptografik olarak imzalanir
+- Hassas kullanici verileri hash'lenerek saklanir
+- Guncellenemez kayit sistemi ile veri butunlugu korunur
 
-1. Dependencies ekleyin:
-```yaml
-dependencies:
-  flutter:
-    sdk: flutter
-  firebase_core: ^2.7.0
-  firebase_auth: ^4.2.10
-  cloud_firestore: ^4.4.4
-  # Blockchain entegrasyonu için
-  web3dart: ^2.6.1
-  http: ^0.13.5
-  crypto: ^3.0.3
-```
+## Mimari
 
-2. Ethereum cüzdanı ve Infura hesabı oluşturun:
-   - Metamask veya başka bir Ethereum cüzdanı kullanarak bir cüzdan oluşturun
-   - [Infura](https://infura.io/) üzerinde hesap açarak bir API anahtarı alın
-   - Sepolia veya Rinkeby test ağı için test ETH alın
+Uygulama su katmanlardan olusur:
 
-3. Akıllı kontratı deploy edin:
-   - lib/contracts/VoteContract.sol dosyasını Remix IDE veya Truffle gibi bir araç kullanarak deploy edin
-   - Deployment sonrası kontrat adresini alın
+1. **Sunum Katmani**: Flutter UI bilesenleri
+2. **Is Mantigi Katmani**: Servisler (Firebase ve Blockchain)
+3. **Veri Katmani**: Firebase Firestore ve Ethereum Blockchain
 
-4. BlockchainService'i yapılandırın:
-   - lib/services/blockchain_service.dart dosyasındaki Infura API anahtarını, özel anahtarınızı ve kontrat adresini güncelleyin
+## Katki Saglama
 
-## Güvenlik Notları
+Projeye katki saglamak istiyorsaniz:
 
-1. Ethereum özel anahtarınızı asla kodun içine yazmayın. Bunun yerine, güvenli bir depolama veya çevresel değişkenler kullanın.
+1. Projeyi fork edin
+2. Ozellik dali olusturun (`git checkout -b yeni-ozellik`)
+3. Degisikliklerinizi commit edin (`git commit -m 'Yeni ozellik: Ozellik aciklamasi'`)
+4. Dali puslayin (`git push origin yeni-ozellik`)
+5. Bir Pull Request olusturun
 
-2. Oyları blockchain'e kaydederken hash kullanarak kullanıcı bilgilerini gizlemeye dikkat edin.
+## Lisans
 
-3. Kullanıcı verilerinin işlenmesinde KVKK/GDPR uyumluluğuna dikkat edin.
+Bu proje MIT lisansi altinda lisanslanmistir. Daha fazla bilgi icin `LICENSE` dosyasina bakin.
 
-## Test Etme
+## Iletisim
 
-Sistemi test etmek için:
-
-1. Test ağında (Sepolia/Rinkeby) kontratı deploy edin
-2. BlockchainService içindeki network ID'sini doğru şekilde ayarlayın
-3. Geliştirme modunda uygulamayı çalıştırın ve konsolda işlem loglarını izleyin
-4. Etherscan üzerinden işlemleri doğrulayın
+Sorular ve geri bildirimler icin:
+- E-posta: ornek@email.com
+- GitHub: [github.com/kullaniciadi](https://github.com/kullaniciadi)
