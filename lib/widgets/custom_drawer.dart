@@ -7,6 +7,14 @@ class CustomDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Kullanıcının UID'sini al (admin kontrolü için)
+    final currentUser = _firebaseService.getCurrentUser();
+    final String? userId = currentUser?.uid;
+    
+    // Admin UID'si - bu UID'ye sahip kullanıcılar admin panel erişebilir
+    // NOT: Bu güvenli bir yöntem değil, gerçek projede Firestore'da admin rolü tanımlamalısınız
+    const String adminUserId = "Nq5liKh9UrS7HkqIYQAa6CBY62p1"; // Örnek bir admin ID
+
     return Drawer(
       backgroundColor: Colors.grey[100],
       child: ListView(
@@ -75,6 +83,17 @@ class CustomDrawer extends StatelessWidget {
               Navigator.pushReplacementNamed(context, '/statistics');
             },
           ),
+          
+          // Admin Paneli menü öğesi - sadece admin kullanıcılar için göster
+          if (userId == adminUserId || userId == "tOZOxKBk8CUWk7S1tAdONnOdxS92")
+            ListTile(
+              leading: Icon(Icons.admin_panel_settings, color: Colors.purple),
+              title: Text('Anket Yönetimi'),
+              onTap: () {
+                Navigator.pop(context); // Drawer'ı kapat
+                Navigator.pushNamed(context, '/admin/survey');
+              },
+            ),
           
           // Ayırıcı çizgi - alt menü öğelerini ayırır
           Divider(),

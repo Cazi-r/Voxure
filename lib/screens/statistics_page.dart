@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/custom_drawer.dart';
 import '../services/blockchain_service.dart';
+import '../services/survey_service.dart';
 
 /// StatisticsPage: Anketlerin oy istatistiklerini gösteren sayfa.
 ///
@@ -12,68 +13,48 @@ class StatisticsPage extends StatefulWidget {
 }
 
 class StatisticsPageState extends State<StatisticsPage> {
-  // Blockchain servisi
+  // Servisler
   final BlockchainService _blockchainService = BlockchainService();
+  final SurveyService _surveyService = SurveyService();
   
   // Veriler yükleniyor mu?
   bool isLoading = true;
   
-  // Anket verileri listesi - Survey sayfasındaki anketlerle aynı format
-  List<Map<String, dynamic>> surveys = [
-    {
-      'id': 'cumhurbaskanligi_secimi',
-      'soru': 'Cumhurbaşkanlığı seçiminde kimi destekliyorsunuz?',
-      'secenekler': ['A Kişisi', 'B Kişisi', 'C Kişisi'],
-      'oylar': [0, 0, 0],
-      'ikon': Icons.how_to_vote,
-      'renk': Colors.green,
-    },
-    {
-      'id': 'belediye_secimi',
-      'soru': 'İstanbul belediye başkanlığı seçiminde kimi destekliyorsunuz?',
-      'secenekler': ['A Adayı', 'B Adayı', 'C Adayı', 'D Adayı'],
-      'oylar': [0, 0, 0, 0],
-      'ikon': Icons.location_city,
-      'renk': Colors.blue,
-    },
-    {
-      'id': 'okul_temsilcisi',
-      'soru': 'İstanbul Sabahattin Zaim Üniversitesi öğrenci temsilcisi seçiminde kimi destekliyorsunuz?',
-      'secenekler': ['A Öğrenci', 'B Öğrenci', 'C Öğrenci'],
-      'oylar': [0, 0, 0],
-      'ikon': Icons.school,
-      'renk': Colors.brown,
-    },
-    {
-      'id': 'isletim_sistemi',
-      'soru': 'Hangi işletim sistemini tercih ediyorsunuz?',
-      'secenekler': ['Windows', 'Linux', 'MacOS', 'Pardus'],
-      'oylar': [0, 0, 0, 0],
-      'ikon': Icons.computer,
-      'renk': Colors.orange,
-    },
-    {
-      'id': 'sosyal_medya',
-      'soru': 'Hangi sosyal medya platformunu daha sık kullanıyorsunuz?',
-      'secenekler': ['Instagram', 'Twitter (X)', 'TikTok', 'Facebook'],
-      'oylar': [0, 0, 0, 0],
-      'ikon': Icons.public,
-      'renk': Colors.purple,
-    },
-  ];
+  // Anket verileri listesi
+  List<Map<String, dynamic>> surveys = [];
 
   @override
   void initState() {
     super.initState();
-    loadDataFromBlockchain();
+    _loadSurveys();
   }
 
-  /// Blockchain'den oy verilerini yükler
-  Future<void> loadDataFromBlockchain() async {
+  /// Firestore'dan anketleri yükler ve sonra blockchain'den oyları alır
+  Future<void> _loadSurveys() async {
     setState(() {
       isLoading = true;
     });
 
+    try {
+      // Firestore'dan anketleri yükle
+      List<Map<String, dynamic>> loadedSurveys = await _surveyService.getSurveys();
+      
+      setState(() {
+        surveys = loadedSurveys;
+      });
+      
+      // Blockchain'den oy verilerini yükle
+      await loadDataFromBlockchain();
+    } catch (e) {
+      print('Anketleri yuklerken hata: $e');
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  /// Blockchain'den oy verilerini yükler
+  Future<void> loadDataFromBlockchain() async {
     try {
       // Her anket için ayrı ayrı blockchain'den verileri al
       for (int i = 0; i < surveys.length; i++) {
@@ -93,15 +74,21 @@ class StatisticsPageState extends State<StatisticsPage> {
         });
         
         // Anket verilerini güncelle
-        surveys[i]['oylar'] = newVotes;
+        if (mounted) {
+          setState(() {
+            surveys[i]['oylar'] = newVotes;
+          });
+        }
       }
     } catch (e) {
       print('Blockchain verileri yuklenirken hata: $e');
       // Hata durumunda sessizce devam et
     } finally {
-      setState(() {
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
@@ -117,7 +104,7 @@ class StatisticsPageState extends State<StatisticsPage> {
             icon: Icon(Icons.refresh),
             tooltip: 'Verileri Yenile',
             onPressed: () {
-              loadDataFromBlockchain();
+              _loadSurveys();
             },
           ),
         ],
@@ -125,23 +112,61 @@ class StatisticsPageState extends State<StatisticsPage> {
       drawer: CustomDrawer(),
       body: isLoading 
           ? Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              padding: EdgeInsets.all(16),
-              itemCount: surveys.length,
-              itemBuilder: (context, index) {
-                return createStatisticsCard(index);
-              },
+          : surveys.isEmpty
+              ? _buildEmptySurveyState()
+              : ListView.builder(
+                  padding: EdgeInsets.all(16),
+                  itemCount: surveys.length,
+                  itemBuilder: (context, index) {
+                    return createStatisticsCard(index);
+                  },
+                ),
+    );
+  }
+
+  /// Anket olmadığında gösterilecek boş durum widget'ı
+  Widget _buildEmptySurveyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.bar_chart_outlined,
+            size: 80,
+            color: Colors.grey,
+          ),
+          SizedBox(height: 16),
+          Text(
+            'Henüz Anket Bulunmuyor',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
             ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Anketlere katılmak için önce anket ekleyin',
+            style: TextStyle(color: Colors.grey),
+          ),
+          SizedBox(height: 24),
+          ElevatedButton.icon(
+            icon: Icon(Icons.refresh),
+            label: Text('Yenile'),
+            onPressed: () => _loadSurveys(),
+          ),
+        ],
+      ),
     );
   }
 
   /// İstatistik kartını oluşturan widget metodu
   Widget createStatisticsCard(int surveyIndex) {
     Map<String, dynamic> survey = surveys[surveyIndex];
+    Color surveyColor = _getColorFromValue(survey['renk']) ?? Colors.blue;
 
     // Tüm seçeneklerin aldığı toplam oy sayısını hesapla
     int totalVotes = 0;
-    List<int> votes = List<int>.from(survey['oylar']);
+    List<int> votes = List<int>.from(survey['oylar'] ?? []);
     for (int vote in votes) {
       totalVotes += vote;
     }
@@ -156,11 +181,11 @@ class StatisticsPageState extends State<StatisticsPage> {
             // Anket sorusu ve ikonu
             Row(
               children: [
-                Icon(survey['ikon'], size: 28, color: survey['renk']),
+                Icon(_getIconFromValue(survey['ikon']), size: 28, color: surveyColor),
                 SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    survey['soru'],
+                    survey['soru'] ?? 'Basliksiz Anket',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -193,10 +218,11 @@ class StatisticsPageState extends State<StatisticsPage> {
   List<Widget> createOptionResults(
       Map<String, dynamic> survey, int totalVotes) {
     List<Widget> results = [];
+    Color surveyColor = _getColorFromValue(survey['renk']) ?? Colors.blue;
     
     // Oylar listesinin seçeneklerle aynı uzunlukta olduğunu kontrol et
-    List<dynamic> secenekler = survey['secenekler'];
-    List<dynamic> oylar = survey['oylar'];
+    List<dynamic> secenekler = survey['secenekler'] ?? [];
+    List<dynamic> oylar = survey['oylar'] ?? [];
     
     // Dizilerin uzunluklarını uyumlu hale getir
     if (oylar.length != secenekler.length) {
@@ -204,7 +230,7 @@ class StatisticsPageState extends State<StatisticsPage> {
     }
 
     for (int i = 0; i < secenekler.length; i++) {
-      String option = secenekler[i];
+      String option = secenekler[i].toString();
       int voteCount = i < oylar.length ? oylar[i] : 0;
 
       // Seçeneğin aldığı oyun yüzdesini hesapla
@@ -234,7 +260,7 @@ class StatisticsPageState extends State<StatisticsPage> {
             LinearProgressIndicator(
               value: percentage / 100,
               backgroundColor: Colors.grey[200],
-              valueColor: AlwaysStoppedAnimation<Color>(survey['renk']),
+              valueColor: AlwaysStoppedAnimation<Color>(surveyColor),
               minHeight: 10,
             ),
           ],
@@ -245,5 +271,51 @@ class StatisticsPageState extends State<StatisticsPage> {
     }
 
     return results;
+  }
+  
+  // Icon değerini IconData'ya dönüştürür
+  IconData _getIconFromValue(dynamic iconValue) {
+    // Basit bir ikonlar maplemesi
+    Map<String, IconData> iconMap = {
+      'poll': Icons.poll,
+      'how_to_vote': Icons.how_to_vote,
+      'location_city': Icons.location_city,
+      'school': Icons.school,
+      'computer': Icons.computer,
+      'public': Icons.public,
+    };
+    
+    if (iconValue is int) {
+      // IconData zaten bir int değeri olarak saklanmış olabilir
+      return IconData(iconValue, fontFamily: 'MaterialIcons');
+    } else if (iconValue is String && iconMap.containsKey(iconValue)) {
+      return iconMap[iconValue]!;
+    }
+    
+    // Varsayılan ikon
+    return Icons.poll;
+  }
+
+  // Renk değerini Color'a dönüştürür
+  Color? _getColorFromValue(dynamic colorValue) {
+    // Basit bir renkler maplemesi
+    Map<String, Color> colorMap = {
+      'green': Colors.green,
+      'blue': Colors.blue,
+      'brown': Colors.brown,
+      'orange': Colors.orange,
+      'purple': Colors.purple,
+      'red': Colors.red,
+    };
+    
+    if (colorValue is int) {
+      // Color zaten bir int değeri olarak saklanmış olabilir
+      return Color(colorValue);
+    } else if (colorValue is String && colorMap.containsKey(colorValue)) {
+      return colorMap[colorValue];
+    }
+    
+    // Varsayılan renk
+    return Colors.blue;
   }
 }

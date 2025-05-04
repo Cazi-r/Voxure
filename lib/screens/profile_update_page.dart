@@ -23,6 +23,7 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
   String? selectedCity;
   String? selectedSchool;
   DateTime? selectedDate;
+  int? _age;
   
   bool _isLoading = false;
   bool _isSaving = false;
@@ -66,6 +67,37 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
     'Diğer'
   ];
   
+  // Yaşa göre uygun okul listesini döndüren fonksiyon
+  List<String> _getAvailableSchools() {
+    if (_age != null && _age! < 18) {
+      return ['Okumuyorum'];
+    }
+    return schools;
+  }
+  
+  // Kullanıcının yaşını hesaplama
+  void _calculateAge() {
+    if (selectedDate != null) {
+      final DateTime now = DateTime.now();
+      int age = now.year - selectedDate!.year;
+      if (now.month < selectedDate!.month || 
+          (now.month == selectedDate!.month && now.day < selectedDate!.day)) {
+        age--;
+      }
+      setState(() {
+        _age = age;
+        // Eğer 18 yaşından küçükse ve üniversite seçiliyse, otomatik olarak "Okumuyorum" yap
+        if (_age! < 18 && selectedSchool != 'Okumuyorum') {
+          selectedSchool = 'Okumuyorum';
+        }
+      });
+    } else {
+      setState(() {
+        _age = null;
+      });
+    }
+  }
+  
   @override
   void initState() {
     super.initState();
@@ -105,6 +137,7 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
           Timestamp? birthDateTimestamp = userData['birthDate'] as Timestamp?;
           if (birthDateTimestamp != null) {
             selectedDate = birthDateTimestamp.toDate();
+            _calculateAge(); // Yaşı hesapla
           }
           
           Timestamp? updatedAtTimestamp = userData['updatedAt'] as Timestamp?;
@@ -117,6 +150,12 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
             _surnameController.text = userData['surname'] as String? ?? '';
             selectedCity = userData['city'] as String?;
             selectedSchool = userData['school'] as String?;
+            
+            // Yaş kontrolü
+            if (_age != null && _age! < 18 && selectedSchool != 'Okumuyorum') {
+              selectedSchool = 'Okumuyorum';
+            }
+            
             _isLoading = false;
           });
         } else {
@@ -248,6 +287,7 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
     if (picked != null && picked != selectedDate) {
       setState(() {
         selectedDate = picked;
+        _calculateAge(); // Yaşı hesapla
       });
     }
   }
@@ -394,11 +434,23 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
                           "Doğum Tarihi", 
                           style: TextStyle(fontSize: 15)
                         ),
-                        subtitle: Text(
-                          selectedDate != null 
-                            ? "${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}"
-                            : "Seçilmedi",
-                          style: TextStyle(fontSize: 14)
+                        subtitle: Row(
+                          children: [
+                            Text(
+                              selectedDate != null 
+                                ? "${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}"
+                                : "Seçilmedi",
+                              style: TextStyle(fontSize: 14)
+                            ),
+                            if (_age != null)
+                              Text(
+                                " (${_age} yaş)", 
+                                style: TextStyle(
+                                  fontSize: 14, 
+                                  color: _age! < 18 ? Colors.red : Colors.green
+                                )
+                              ),
+                          ],
                         ),
                         trailing: Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
                         contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 2),
@@ -476,56 +528,69 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
                         border: Border.all(color: Colors.grey.shade300),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          isExpanded: true,
-                          icon: Icon(Icons.arrow_drop_down, color: Colors.grey),
-                          hint: Row(
-                            children: [
-                              Icon(Icons.school, color: Color(0xFF5181BE), size: 20),
-                              SizedBox(width: 12),
-                              Text(
-                                "Okulunuz",
-                                style: TextStyle(fontSize: 15)
-                              ),
-                            ],
-                          ),
-                          value: selectedSchool,
-                          items: schools.map((String school) {
-                            return DropdownMenuItem<String>(
-                              value: school,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (_age != null && _age! < 18)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8.0, left: 8.0),
                               child: Text(
-                                school,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.normal,
-                                  fontSize: 15,
-                                ),
+                                "18 yaşından küçük olduğunuz için okul seçimi yapılamaz.",
+                                style: TextStyle(color: Colors.red, fontSize: 12),
                               ),
-                            );
-                          }).toList(),
-                          onChanged: (String? newValue) {
-                            setState(() {
-                              selectedSchool = newValue;
-                            });
-                          },
-                          selectedItemBuilder: (BuildContext context) {
-                            return schools.map<Widget>((String school) {
-                              return Row(
+                            ),
+                          DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              isExpanded: true,
+                              icon: Icon(Icons.arrow_drop_down, color: Colors.grey),
+                              hint: Row(
                                 children: [
                                   Icon(Icons.school, color: Color(0xFF5181BE), size: 20),
                                   SizedBox(width: 12),
                                   Text(
+                                    "Okulunuz",
+                                    style: TextStyle(fontSize: 15)
+                                  ),
+                                ],
+                              ),
+                              value: selectedSchool,
+                              items: _getAvailableSchools().map((String school) {
+                                return DropdownMenuItem<String>(
+                                  value: school,
+                                  child: Text(
                                     school,
                                     style: TextStyle(
                                       fontWeight: FontWeight.normal,
                                       fontSize: 15,
                                     ),
                                   ),
-                                ],
-                              );
-                            }).toList();
-                          },
-                        ),
+                                );
+                              }).toList(),
+                              onChanged: (_age != null && _age! < 18) ? null : (String? newValue) {
+                                setState(() {
+                                  selectedSchool = newValue;
+                                });
+                              },
+                              selectedItemBuilder: (BuildContext context) {
+                                return _getAvailableSchools().map<Widget>((String school) {
+                                  return Row(
+                                    children: [
+                                      Icon(Icons.school, color: Color(0xFF5181BE), size: 20),
+                                      SizedBox(width: 12),
+                                      Text(
+                                        school,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.normal,
+                                          fontSize: 15,
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                }).toList();
+                              },
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     SizedBox(height: 24),
@@ -641,14 +706,15 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("• Girdiginiz bilgilere gore size ozel anketler getirilecektir.",),
+              Text("• Girdiğiniz bilgilere göre size özel anketler getirilecektir.",),
               SizedBox(height: 8),
-              Text('• Yasadiginiz il, yasiniz ve okulunuz gibi bilgiler anketlerin gosteriminde etkilidir.'),
+              Text('• Yaşadığınız il, yaşınız ve okulunuz gibi bilgiler anketlerin gösteriminde etkilidir.'),
               SizedBox(height: 8),
-              Text('• Profil bilgileriniz eksikse bazi anketleri goremeyebilirsiniz.'),
+              Text('• Profil bilgileriniz eksikse bazı anketleri göremeyebilirsiniz.'),
               SizedBox(height: 8),
-              Text('• Profil bilgilerinizi 6 ayda sadece bir kez guncelleyebilirsiniz.', style: TextStyle(color: Colors.red)),
+              Text('• Profil bilgilerinizi 6 ayda sadece bir kez güncelleyebilirsiniz.', style: TextStyle(color: Colors.red)),
               SizedBox(height: 8),
+              Text('• 18 yaşından küçükseniz, okul seçimi otomatik olarak "Okumuyorum" olarak ayarlanacaktır.', style: TextStyle(color: Colors.red)),
             ],
           ),
           actions: [

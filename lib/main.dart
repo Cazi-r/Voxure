@@ -5,6 +5,7 @@ import 'screens/survey_page.dart';
 import 'screens/statistics_page.dart';
 import 'screens/register_page.dart';
 import 'screens/profile_update_page.dart';
+import 'screens/admin/survey_admin.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'services/firebase_service.dart';
@@ -109,6 +110,7 @@ class _MyAppState extends State<MyApp> {
         '/survey': (context) => SurveyPage(),
         '/statistics': (context) => StatisticsPage(),
         '/profile_update': (context) => ProfileUpdatePage(),
+        '/admin/survey': (context) => SurveyAdminPage(),
       },
     );
   }
