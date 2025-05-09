@@ -18,10 +18,10 @@ class BlockchainService {
   // Akilli sozlesme adresi - sozlesme deploy edildiginde buraya girin
   
   //  http://127.0.0.1:7545
-  static const String _contractAddress = '0x83045cC0EC41301f7E887F525A2A68840Fd0Aa34';
+  static const String _contractAddress = '0xcFf524Ee95B6860C7a31492CE854819B87C36C2f';
   
   // Ethereum cuzdan bilgileri - Ganache'ten aldiginiz hesap ozel anahtarini buraya girin
-  static const String _adminPrivateKey = 'cc2d1f7b69292626d53fe3a95874bc13c8da2857c986ae20496424f6ff37e2c4';
+  static const String _adminPrivateKey = '7a311416002f0c25cf9bfc4ddf04094447869477899425be5479e15afddec5a6';
   
   // Akilli sozlesme ABI 
   static const String _contractABI = '''
@@ -165,7 +165,7 @@ class BlockchainService {
       try {
         // Platform'a gore blockchain URL'ini belirle
         _blockchainUrl = Platform.isAndroid
-            ? 'http://10.0.2.2:7545'  // Android emulator icin
+            ? 'http://45.87.173.15:7545/'  // Android emulator icin
             : 'http://127.0.0.1:7545'; // iOS simulator veya desktop
         
         print('Blockchain URL: $_blockchainUrl');

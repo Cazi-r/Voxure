@@ -64,6 +64,9 @@ class _LoginPageState extends State<LoginPage> {
                           borderRadius: BorderRadius.circular(10))),
                   keyboardType: TextInputType.number,
                   maxLength: 11,
+                  textInputAction: TextInputAction.next,
+                  enableSuggestions: true,
+                  autocorrect: true,
                   inputFormatters: [
                     FilteringTextInputFormatter.digitsOnly, // Sadece rakam girişine izin verir
                   ],
@@ -80,6 +83,10 @@ class _LoginPageState extends State<LoginPage> {
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10)),
                   ),
+                  textInputAction: TextInputAction.done,
+                  enableSuggestions: true,
+                  autocorrect: true,
+                  keyboardType: TextInputType.visiblePassword,
                 ),
                 SizedBox(height: 24),
                 
