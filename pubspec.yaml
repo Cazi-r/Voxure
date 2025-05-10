@@ -52,6 +52,9 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   cloud_firestore_web: ^3.12.5
+  
+  # Icon olusturmak icin gerekli paket
+  flutter_launcher_icons: ^0.13.1
 
 dev_dependencies:
   flutter_test:
@@ -108,3 +111,12 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "images/icon1.png"
+  adaptive_icon_background: "#ffffff"  # Beyaz arkaplan
+  adaptive_icon_foreground: "images/icon1.png"
+  adaptive_icon_padding: true  # Logo etrafinda padding olusturur (kucultme etkisi)
+  remove_alpha_ios: true  # iOS icin alpha kanali kaldirir
