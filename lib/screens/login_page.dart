@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'survey_page.dart';
 import '../services/firebase_service.dart';
+import '../services/auth_service.dart';
 import 'package:flutter/services.dart';
 import '../widgets/custom_app_bar.dart';
 import '../widgets/base_page.dart';
@@ -13,6 +14,7 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   // Firebase servisi
   final FirebaseService _firebaseService = FirebaseService();
+  final AuthService _authService = AuthService();
   
   // Text controller'lar
   final emailController = TextEditingController();
@@ -125,6 +127,41 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           ],
                         ),
+                  SizedBox(height: 20),
+                  
+                  // Google ile giris butonu
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.black,
+                      minimumSize: Size(double.infinity, 50),
+                      side: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    icon: Image.network(
+                      'https://cdn1.iconfinder.com/data/icons/google-s-logo/150/Google_Icons-09-512.png',
+                      height: 24,
+                    ),
+                    label: const Text('Google ile Giris Yap'),
+                    onPressed: () async {
+                      setState(() {
+                        _isLoading = true;
+                      });
+                      
+                      try {
+                        final user = await _authService.signInWithGoogle();
+                        if (user != null && mounted) {
+                          Navigator.pushReplacementNamed(context, '/home');
+                        }
+                      } finally {
+                        if (mounted) {
+                          setState(() {
+                            _isLoading = false;
+                          });
+                        }
+                      }
+                    },
+                  ),
                 ],
               ),
             ),

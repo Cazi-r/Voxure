@@ -9,6 +9,7 @@ import 'screens/admin/survey_admin.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'services/firebase_service.dart';
+import 'services/auth_service.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/foundation.dart';
 
@@ -23,11 +24,6 @@ void main() async {
     );
     
     print('Firebase initialized successfully');
-    
-    // Firebase servisini başlat
-    final firebaseService = FirebaseService();
-    
-    print('Firebase service initialized');
   } catch (e) {
     print('Initialization error: $e');
   }
@@ -35,55 +31,19 @@ void main() async {
   runApp(MyApp());
 }
 
-class MyApp extends StatefulWidget {
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
+class MyApp extends StatelessWidget {
+  final AuthService _authService = AuthService();
 
-class _MyAppState extends State<MyApp> {
-  final FirebaseService _firebaseService = FirebaseService();
-  bool _isInitialized = false;
-  bool _isLoggedIn = false;
-  
-  @override
-  void initState() {
-    super.initState();
-    _checkLoginStatus();
-  }
-  
-  // Kullanıcı giriş durumunu kontrol et
-  Future<void> _checkLoginStatus() async {
-    try {
-      _isLoggedIn = _firebaseService.isUserLoggedIn();
-    } catch (e) {
-      print('Login check error: $e');
-    } finally {
-      setState(() {
-        _isInitialized = true;
-      });
-    }
-  }
-  
+  MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
-    // Uygulama başlatılana kadar yükleniyor göster
-    if (!_isInitialized) {
-      return MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: Scaffold(
-          body: Center(
-            child: CircularProgressIndicator(),
-          ),
-        ),
-      );
-    }
-    
     return MaterialApp(
       title: 'Voxure',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primaryColor: Color(0xFF5181BE),
-        colorScheme: ColorScheme.fromSeed(seedColor: Color(0xFF5181BE)),
+        primaryColor: const Color(0xFF5181BE),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF5181BE)),
         useMaterial3: true,
       ),
       // Lokalizasyon delegeleri ekle
@@ -99,10 +59,25 @@ class _MyAppState extends State<MyApp> {
       ],
       // Varsayılan dil
       locale: const Locale('tr', 'TR'),
-      initialRoute: _isLoggedIn ? '/home' : '/',
+      home: StreamBuilder(
+        stream: _authService.authStateChanges,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(
+                child: CircularProgressIndicator(),
+              ),
+            );
+          }
+          
+          if (snapshot.hasData) {
+            return HomePage();
+          }
+          
+          return LoginPage();
+        },
+      ),
       routes: {
-        '/': (context) => LoginPage(),
-        '/register': (context) => RegisterPage(),
         '/home': (context) => HomePage(),
         '/survey': (context) => SurveyPage(),
         '/statistics': (context) => StatisticsPage(),
