@@ -1,125 +1,117 @@
 import 'package:flutter/material.dart';
 import '../services/firebase_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class CustomDrawer extends StatelessWidget {
-  // Firebase servisini başlat
   final FirebaseService _firebaseService = FirebaseService();
+
+  CustomDrawer({super.key});
+
+  void _navigate(BuildContext context, String route) {
+    Navigator.pop(context);
+    if (ModalRoute.of(context)?.settings.name != route) {
+      Navigator.pushReplacementNamed(context, route);
+    }
+  }
+
+  void _logout(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Cikis'),
+          content: const Text('Cikmak istediginize emin misiniz?'),
+          actions: [
+            TextButton(
+              child: const Text('Iptal'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            TextButton(
+              child: const Text('Evet'),
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await _firebaseService.signOut();
+                Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Cikis yapildi')),
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Kullanıcının UID'sini al (admin kontrolü için)
+    // Admin kontrolu icin kullanici bilgilerini al
     final currentUser = _firebaseService.getCurrentUser();
     final String? userId = currentUser?.uid;
+    final String? userEmail = currentUser?.email;
+    String? tcKimlik;
     
-    // Admin UID'si - bu UID'ye sahip kullanıcılar admin panel erişebilir
-    // NOT: Bu güvenli bir yöntem değil, gerçek projede Firestore'da admin rolü tanımlamalısınız
-    const String adminUserId = "Nq5liKh9UrS7HkqIYQAa6CBY62p1"; // Örnek bir admin ID
+    if (userEmail != null) {
+      tcKimlik = userEmail.split('@')[0];
+    }
+    
+    // Admin UID kontrolu
+    const String adminUserId = "Nq5liKh9UrS7HkqIYQAa6CBY62p1";
+    bool isAdmin = (userId == adminUserId || userId == "tOZOxKBk8CUWk7S1tAdONnOdxS92");
 
     return Drawer(
-      backgroundColor: Colors.grey[100],
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
-          // Drawer başlık bölümü
-          // Uygulama logosu ve adını içeren üst kısım
-          DrawerHeader(
+          UserAccountsDrawerHeader(
             decoration: BoxDecoration(
               color: Color(0xFF5181BE),
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Uygulama logosu
-                // Uygulama kimliğini güçlendiren görsel öğe
-                Image.asset(
-                  'images/icon.png',
-                  height: 70,
-                  width: 70,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Icon(Icons.image, size: 70, color: Colors.white);
-                  },
-                ),
-                SizedBox(height: 10),
-                // Uygulama adı
-                // Beyaz renkte ve vurgulu şekilde gösterilir
-                Text(
-                  'VOXURE',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
+            accountName: Text(''),
+            accountEmail: Text(userEmail ?? ''),
+            currentAccountPicture: CircleAvatar(
+              backgroundColor: Colors.white,
+              child: Icon(Icons.person, color: Color(0xFF5181BE), size: 50),
             ),
           ),
           
-          // Ana Sayfa menü öğesi
-          // Kullanıcıyı ana sayfaya yönlendirir
           ListTile(
             leading: Icon(Icons.home, color: Color(0xFF5181BE)),
             title: Text('Ana Sayfa'),
-            onTap: () {
-              Navigator.pushReplacementNamed(context, '/home');
-            },
+            onTap: () => _navigate(context, '/home'),
           ),
           
-          // Anketler menü öğesi
-          // Kullanıcıyı anket sayfasına yönlendirir, oy kullanmayı sağlar
           ListTile(
             leading: Icon(Icons.poll, color: Color(0xFF5181BE)),
             title: Text('Anketler'),
-            onTap: () {
-              Navigator.pushReplacementNamed(context, '/survey');
-            },
+            onTap: () => _navigate(context, '/survey'),
           ),
           
-          // İstatistikler menü öğesi
-          // Kullanıcıyı anket sonuçları ve istatistikleri sayfasına yönlendirir
           ListTile(
             leading: Icon(Icons.bar_chart, color: Color(0xFF5181BE)),
-            title: Text('İstatistikler'),
-            onTap: () {
-              Navigator.pushReplacementNamed(context, '/statistics');
-            },
+            title: Text('Istatistikler'),
+            onTap: () => _navigate(context, '/statistics'),
           ),
           
-          // Admin Paneli menü öğesi - sadece admin kullanıcılar için göster
-          if (userId == adminUserId || userId == "tOZOxKBk8CUWk7S1tAdONnOdxS92")
+          if (isAdmin)
             ListTile(
               leading: Icon(Icons.admin_panel_settings, color: Colors.purple),
-              title: Text('Anket Yönetimi'),
-              onTap: () {
-                Navigator.pop(context); // Drawer'ı kapat
-                Navigator.pushNamed(context, '/admin/survey');
-              },
+              title: Text('Anket Yonetimi'),
+              onTap: () => _navigate(context, '/admin/survey'),
             ),
           
-          // Ayırıcı çizgi - alt menü öğelerini ayırır
-          Divider(),
+          const Divider(),
           
-          // Profil Düzenleme menü öğesi
           ListTile(
             leading: Icon(Icons.person_outline, color: Color(0xFF5181BE)),
             title: Text('Profil Bilgilerim'),
-            onTap: () {
-              Navigator.pop(context); // Drawer'ı kapat
-              Navigator.pushNamed(context, '/profile_update');
-            },
+            onTap: () => _navigate(context, '/profile_update'),
           ),
           
-          // Çıkış menü öğesi
-          // Kullanıcıyı oturumdan çıkarır ve giriş sayfasına yönlendirir
-          // Diğer menü öğelerinden farklı olarak kırmızı renkli ikon kullanılır
           ListTile(
-            leading: Icon(Icons.logout, color: Colors.red),
-            title: Text('Çıkış'),
-            onTap: () async {
-              // Firebase'den çıkış yap
-              await _firebaseService.signOut();
-              // Giriş sayfasına yönlendir
-              Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
-            },
+            leading: Icon(Icons.exit_to_app, color: Colors.red),
+            title: Text('Cikis'),
+            onTap: () => _logout(context),
           ),
         ],
       ),
