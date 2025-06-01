@@ -162,6 +162,38 @@ class _LoginPageState extends State<LoginPage> {
                       }
                     },
                   ),
+                  SizedBox(height: 10),
+                  // GitHub ile giris butonu
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      backgroundColor: Colors.grey[800], // GitHub rengine yakin
+                      foregroundColor: Colors.white,
+                      minimumSize: Size(double.infinity, 50),
+                    ),
+                    icon: Image.network(
+                      'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png', // GitHub logosu
+                      height: 24,
+                    ),
+                    label: const Text('GitHub ile Giris Yap'),
+                    onPressed: () async {
+                      setState(() {
+                        _isLoading = true;
+                      });
+                      try {
+                        final user = await _authService.signInWithGitHub();
+                        if (user != null && mounted) {
+                          Navigator.pushReplacementNamed(context, '/home');
+                        }
+                      } finally {
+                        if (mounted) {
+                          setState(() {
+                            _isLoading = false;
+                          });
+                        }
+                      }
+                    },
+                  ),
                 ],
               ),
             ),
