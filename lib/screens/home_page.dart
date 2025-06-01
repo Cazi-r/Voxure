@@ -4,6 +4,7 @@ import '../widgets/custom_app_bar.dart';
 import '../services/firebase_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../widgets/base_page.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -119,119 +120,124 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: CustomAppBar(
-        title: 'Ana Sayfa',
-      ),
-      drawer: CustomDrawer(),
-      body: _isLoading
-          ? Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Kullanici bilgi karti
-                  if (currentUser != null) _createUserCard(),
-                  
-                  // Kullanici bilgilerini isteme uyarisi - sadece profil eksikse göster
-                  if (_isProfileIncomplete)
-                    Container(
-                      margin: EdgeInsets.only(top: 16),
-                      padding: EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.shade100,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.orange.shade300),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.warning_amber_rounded, color: Colors.orange.shade800),
-                              SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  "Profil Bilgileriniz Eksik",
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.orange.shade800,
+    return BasePage(
+      title: 'Ana Sayfa',
+      content: _buildContent(),
+    );
+  }
+
+  Widget _buildContent() {
+    return Stack(
+      children: [
+        _isLoading
+            ? Center(child: CircularProgressIndicator())
+            : Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Kullanici bilgi karti
+                    if (currentUser != null) _createUserCard(),
+                    
+                    // Kullanici bilgilerini isteme uyarisi - sadece profil eksikse göster
+                    if (_isProfileIncomplete)
+                      Container(
+                        margin: EdgeInsets.only(top: 16),
+                        padding: EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade100,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.orange.shade300),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.warning_amber_rounded, color: Colors.orange.shade800),
+                                SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    "Profil Bilgileriniz Eksik",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.orange.shade800,
+                                    ),
                                   ),
                                 ),
+                              ],
+                            ),
+                            SizedBox(height: 10),
+                            Text(
+                              "Doğum tarihi, yaşadığınız il ve okul bilgilerinizi girerek uygulamanın tüm özelliklerinden yararlanabilirsiniz.",
+                              style: TextStyle(
+                                color: Colors.orange.shade800,
                               ),
-                            ],
-                          ),
-                          SizedBox(height: 10),
-                          Text(
-                            "Doğum tarihi, yaşadığınız il ve okul bilgilerinizi girerek uygulamanın tüm özelliklerinden yararlanabilirsiniz.",
-                            style: TextStyle(
-                              color: Colors.orange.shade800,
                             ),
-                          ),
-                          SizedBox(height: 10),
-                          ElevatedButton(
-                            onPressed: () async {
-                              // Profil sayfasına git ve dönüşte profil durumunu tekrar kontrol et
-                              await Navigator.pushNamed(context, '/profile_update');
-                              _loadUser(); // Profil sayfasından dönünce bilgileri yeniden yükle
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange.shade600,
-                              foregroundColor: Colors.white,
+                            SizedBox(height: 10),
+                            ElevatedButton(
+                              onPressed: () async {
+                                // Profil sayfasına git ve dönüşte profil durumunu tekrar kontrol et
+                                await Navigator.pushNamed(context, '/profile_update');
+                                _loadUser(); // Profil sayfasından dönünce bilgileri yeniden yükle
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.orange.shade600,
+                                foregroundColor: Colors.white,
+                              ),
+                              child: Text("Profil Bilgilerini Güncelle"),
                             ),
-                            child: Text("Profil Bilgilerini Güncelle"),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
+
+                    SizedBox(height: 24),
+                    Divider(),
+                    SizedBox(height: 16),
+
+                    // Hizli erisim menusu
+                    _createHeaderRow('Hızlı Erişim', Icons.dashboard),
+
+                    SizedBox(height: 16),
+                    
+                    // Anketler butonu
+                    _createMenuButton(
+                      icon: Icons.poll,
+                      title: 'Anketler',
+                      description: 'Anketlere eriş ve oy kullan',
+                      onTapFunction: () {
+                        Navigator.pushNamed(context, '/survey');
+                      },
                     ),
 
-                  SizedBox(height: 24),
-                  Divider(),
-                  SizedBox(height: 16),
+                    SizedBox(height: 16),
 
-                  // Hizli erisim menusu
-                  _createHeaderRow('Hızlı Erişim', Icons.dashboard),
-
-                  SizedBox(height: 16),
-                  
-                  // Anketler butonu
-                  _createMenuButton(
-                    icon: Icons.poll,
-                    title: 'Anketler',
-                    description: 'Anketlere eriş ve oy kullan',
-                    onTapFunction: () {
-                      Navigator.pushNamed(context, '/survey');
-                    },
-                  ),
-
-                  SizedBox(height: 16),
-
-                  // Istatistikler butonu
-                  _createMenuButton(
-                    icon: Icons.bar_chart,
-                    title: 'İstatistikler',
-                    description: 'Anket sonuçlarını incele',
-                    onTapFunction: () {
-                      Navigator.pushNamed(context, '/statistics');
-                    },
-                  ),
-                  
-                  SizedBox(height: 16),
-                  
-                  // Profil Bilgilerim butonu
-                  _createMenuButton(
-                    icon: Icons.person_outline,
-                    title: 'Profil Bilgilerim',
-                    description: 'Kişisel bilgilerinizi düzenleyin',
-                    onTapFunction: () {
-                      Navigator.pushNamed(context, '/profile_update');
-                    },
-                  ),
-                ],
+                    // Istatistikler butonu
+                    _createMenuButton(
+                      icon: Icons.bar_chart,
+                      title: 'İstatistikler',
+                      description: 'Anket sonuçlarını incele',
+                      onTapFunction: () {
+                        Navigator.pushNamed(context, '/statistics');
+                      },
+                    ),
+                    
+                    SizedBox(height: 16),
+                    
+                    // Profil Bilgilerim butonu
+                    _createMenuButton(
+                      icon: Icons.person_outline,
+                      title: 'Profil Bilgilerim',
+                      description: 'Kişisel bilgilerinizi düzenleyin',
+                      onTapFunction: () {
+                        Navigator.pushNamed(context, '/profile_update');
+                      },
+                    ),
+                  ],
+                ),
               ),
-            ),
+      ],
     );
   }
 

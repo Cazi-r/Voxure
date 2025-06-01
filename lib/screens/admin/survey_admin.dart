@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../services/survey_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../widgets/custom_app_bar.dart';
+import '../../widgets/base_page.dart';
 
 class SurveyAdminPage extends StatefulWidget {
   @override
@@ -42,70 +43,71 @@ class _SurveyAdminPageState extends State<SurveyAdminPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: CustomAppBar(
-        title: 'Anket Yonetimi',
-        actions: [
-          IconButton(
-            icon: Icon(Icons.refresh),
-            onPressed: _loadSurveys,
-            tooltip: 'Anketleri Yenile',
+    return BasePage(
+      title: 'Anket Yonetimi',
+      showSaveButton: true,
+      onSavePressed: _saveSurvey,
+      content: Stack(
+        children: [
+          _isLoading
+              ? Center(child: CircularProgressIndicator())
+              : _surveys.isEmpty
+                  ? _buildEmptySurveyState()
+                  : ListView.builder(
+                      itemCount: _surveys.length,
+                      itemBuilder: (context, index) {
+                        final survey = _surveys[index];
+                        final Color surveyColor = survey['renk'] != null 
+                            ? _getColorFromValue(survey['renk']) 
+                            : Colors.purple;
+                        
+                        return Card(
+                          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          elevation: 4,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(color: surveyColor.withOpacity(0.7), width: 2),
+                          ),
+                          child: ListTile(
+                            leading: Icon(
+                              _getIconFromValue(survey['ikon']),
+                              color: surveyColor,
+                              size: 30,
+                            ),
+                            title: Text(
+                              survey['soru'] ?? 'Başlıksız Anket',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            subtitle: Text('${(survey['secenekler'] ?? []).length} seçenek | ' +
+                                _getSurveyFilters(survey)),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: Icon(Icons.edit, color: Colors.blue),
+                                  onPressed: () => _editSurvey(survey),
+                                ),
+                                IconButton(
+                                  icon: Icon(Icons.delete, color: Colors.red),
+                                  onPressed: () => _deleteSurvey(survey['id']),
+                                ),
+                              ],
+                            ),
+                            onTap: () => _viewSurveyDetails(survey),
+                          ),
+                        );
+                      },
+                    ),
+          Positioned(
+            right: 16,
+            bottom: 16,
+            child: FloatingActionButton(
+              child: Icon(Icons.add),
+              onPressed: _addNewSurvey,
+              backgroundColor: Colors.purple,
+            ),
           ),
         ],
-      ),
-      body: _isLoading
-          ? Center(child: CircularProgressIndicator())
-          : _surveys.isEmpty
-              ? _buildEmptySurveyState()
-              : ListView.builder(
-                  itemCount: _surveys.length,
-                  itemBuilder: (context, index) {
-                    final survey = _surveys[index];
-                    final Color surveyColor = survey['renk'] != null 
-                        ? _getColorFromValue(survey['renk']) 
-                        : Colors.purple;
-                    
-                    return Card(
-                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      elevation: 4,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(color: surveyColor.withOpacity(0.7), width: 2),
-                      ),
-                      child: ListTile(
-                        leading: Icon(
-                          _getIconFromValue(survey['ikon']),
-                          color: surveyColor,
-                          size: 30,
-                        ),
-                        title: Text(
-                          survey['soru'] ?? 'Başlıksız Anket',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: Text('${(survey['secenekler'] ?? []).length} seçenek | ' +
-                            _getSurveyFilters(survey)),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: Icon(Icons.edit, color: Colors.blue),
-                              onPressed: () => _editSurvey(survey),
-                            ),
-                            IconButton(
-                              icon: Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => _deleteSurvey(survey['id']),
-                            ),
-                          ],
-                        ),
-                        onTap: () => _viewSurveyDetails(survey),
-                      ),
-                    );
-                  },
-                ),
-      floatingActionButton: FloatingActionButton(
-        child: Icon(Icons.add),
-        onPressed: _addNewSurvey,
-        backgroundColor: Colors.purple,
       ),
     );
   }
@@ -294,6 +296,10 @@ class _SurveyAdminPageState extends State<SurveyAdminPage> {
         ],
       ),
     );
+  }
+
+  void _saveSurvey() {
+    // Implementation of _saveSurvey method
   }
 }
 

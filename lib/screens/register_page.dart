@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/firebase_service.dart';
 import 'package:flutter/services.dart';
 import '../widgets/custom_app_bar.dart';
+import '../widgets/base_page.dart';
 
 class RegisterPage extends StatefulWidget {
   @override
@@ -20,165 +21,168 @@ class _RegisterPageState extends State<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: CustomAppBar(
-        title: 'Kayıt Ol',
-      ),
-      body: Stack(
-        children: [
-          SingleChildScrollView(
-            padding: EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Center(
-                  child: Column(
-                    children: [
-                      Image.asset(
-                        'images/icon.png',
-                        height: 100,
-                        width: 100,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Icon(Icons.image, size: 100, color: Color(0xFF5181BE));
-                        },
+    return BasePage(
+      title: 'Kayit Ol',
+      showDrawer: false,
+      content: _buildContent(),
+    );
+  }
+
+  Widget _buildContent() {
+    return Stack(
+      children: [
+        SingleChildScrollView(
+          padding: EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Column(
+                  children: [
+                    Image.asset(
+                      'images/icon.png',
+                      height: 100,
+                      width: 100,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Icon(Icons.image, size: 100, color: Color(0xFF5181BE));
+                      },
+                    ),
+                    SizedBox(height: 12),
+                    Text(
+                      'VOXURE - Kayıt Formu',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
                       ),
-                      SizedBox(height: 12),
-                      Text(
-                        'VOXURE - Kayıt Formu',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 24),
-                    ],
-                  ),
+                    ),
+                    SizedBox(height: 24),
+                  ],
                 ),
-                
-                Container(
-                  padding: EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.blue.shade100),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.info, color: Colors.blue),
-                          SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              "Basit Kayıt",
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.blue.shade800,
-                              ),
+              ),
+              
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue.shade100),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.info, color: Colors.blue),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            "Basit Kayıt",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue.shade800,
                             ),
                           ),
-                        ],
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        "Hesap oluşturmak için sadece e-posta ve şifre gerekiyor. Diğer bilgilerinizi (doğum tarihi, il ve okul) daha sonra girebilirsiniz.",
-                        style: TextStyle(color: Colors.blue.shade800),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 24),
-                
-                TextField(
-                  controller: emailController,
-                  decoration: InputDecoration(
-                    labelText: "E-posta",
-                    prefixIcon: Icon(Icons.email),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                  textInputAction: TextInputAction.next,
-                  autocorrect: false,
-                ),
-                SizedBox(height: 20),
-                
-                TextField(
-                  controller: sifreController,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: "Şifre",
-                    prefixIcon: Icon(Icons.lock),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  textInputAction: TextInputAction.next,
-                ),
-                SizedBox(height: 20),
-                
-                TextField(
-                  controller: sifreTekrarController,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: "Şifre Tekrar",
-                    prefixIcon: Icon(Icons.lock_reset),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                ),
-                SizedBox(height: 30),
-                
-                ElevatedButton(
-                  onPressed: _registerUser,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color.fromARGB(255, 240, 76, 64),
-                    padding: EdgeInsets.symmetric(vertical: 12),
-                    minimumSize: Size(double.infinity, 50),
-                  ),
-                  child: Text('KAYIT OL', style: TextStyle(fontSize: 16, color: Colors.white)),
-                ),
-              ],
-            ),
-          ),
-          
-          if (_isLoading)
-            Container(
-              width: double.infinity,
-              height: double.infinity,
-              color: Colors.black.withOpacity(0.7),
-              child: Center(
-                child: Container(
-                  padding: EdgeInsets.symmetric(vertical: 30, horizontal: 40),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(15),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black26,
-                        blurRadius: 10.0,
-                        offset: Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      CircularProgressIndicator(
-                        color: const Color.fromARGB(255, 240, 76, 64),
-                      ),
-                      SizedBox(height: 20),
-                      Text(
-                        _loadingMessage,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
                         ),
+                      ],
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      "Hesap oluşturmak için sadece e-posta ve şifre gerekiyor. Diğer bilgilerinizi (doğum tarihi, il ve okul) daha sonra girebilirsiniz.",
+                      style: TextStyle(color: Colors.blue.shade800),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 24),
+              
+              TextField(
+                controller: emailController,
+                decoration: InputDecoration(
+                  labelText: "E-posta",
+                  prefixIcon: Icon(Icons.email),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))
+                ),
+                keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
+                autocorrect: false,
+              ),
+              SizedBox(height: 20),
+              
+              TextField(
+                controller: sifreController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: "Şifre",
+                  prefixIcon: Icon(Icons.lock),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                textInputAction: TextInputAction.next,
+              ),
+              SizedBox(height: 20),
+              
+              TextField(
+                controller: sifreTekrarController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: "Şifre Tekrar",
+                  prefixIcon: Icon(Icons.lock_reset),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+              SizedBox(height: 30),
+              
+              ElevatedButton(
+                onPressed: _registerUser,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color.fromARGB(255, 240, 76, 64),
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  minimumSize: Size(double.infinity, 50),
+                ),
+                child: Text('KAYIT OL', style: TextStyle(fontSize: 16, color: Colors.white)),
+              ),
+            ],
+          ),
+        ),
+        
+        if (_isLoading)
+          Container(
+            width: double.infinity,
+            height: double.infinity,
+            color: Colors.black.withOpacity(0.7),
+            child: Center(
+              child: Container(
+                padding: EdgeInsets.symmetric(vertical: 30, horizontal: 40),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(15),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 10.0,
+                      offset: Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(
+                      color: const Color.fromARGB(255, 240, 76, 64),
+                    ),
+                    SizedBox(height: 20),
+                    Text(
+                      _loadingMessage,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
-        ],
-      ),
+          ),
+      ],
     );
   }
   

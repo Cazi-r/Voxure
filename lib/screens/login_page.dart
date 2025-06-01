@@ -3,6 +3,7 @@ import 'survey_page.dart';
 import '../services/firebase_service.dart';
 import 'package:flutter/services.dart';
 import '../widgets/custom_app_bar.dart';
+import '../widgets/base_page.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -22,107 +23,114 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: CustomAppBar(
-        title: 'Giris Yap',
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Center(
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Uygulama logosu
-                Image.asset(
-                  'images/icon.png',
-                  height: 140,
-                  width: 140,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Icon(Icons.image, size: 140, color: Color(0xFF5181BE));
-                  },
-                ),
-                SizedBox(height: 16),
-                
-                // Uygulama başlığı
-                Text(
-                  'VOXURE',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
+    return BasePage(
+      title: 'Giris Yap',
+      showDrawer: false,
+      content: _buildContent(),
+    );
+  }
+
+  Widget _buildContent() {
+    return Stack(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Center(
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Uygulama logosu
+                  Image.asset(
+                    'images/icon.png',
+                    height: 140,
+                    width: 140,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Icon(Icons.image, size: 140, color: Color(0xFF5181BE));
+                    },
                   ),
-                ),
-                SizedBox(height: 24),
-                
-                // E-posta giriş alanı
-                TextField(
-                  controller: emailController,
-                  decoration: InputDecoration(
-                      labelText: "E-posta",
-                      prefixIcon: Icon(Icons.email),
+                  SizedBox(height: 16),
+                  
+                  // Uygulama başlığı
+                  Text(
+                    'VOXURE',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 24),
+                  
+                  // E-posta giriş alanı
+                  TextField(
+                    controller: emailController,
+                    decoration: InputDecoration(
+                        labelText: "E-posta",
+                        prefixIcon: Icon(Icons.email),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10))),
+                    keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.next,
+                    enableSuggestions: true,
+                    autocorrect: false,
+                  ),
+                  SizedBox(height: 12),
+                  
+                  // Şifre giriş alanı
+                  TextField(
+                    controller: sifreController,
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      labelText: "Şifre",
+                      prefixIcon: Icon(Icons.lock),
                       border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10))),
-                  keyboardType: TextInputType.emailAddress,
-                  textInputAction: TextInputAction.next,
-                  enableSuggestions: true,
-                  autocorrect: false,
-                ),
-                SizedBox(height: 12),
-                
-                // Şifre giriş alanı
-                TextField(
-                  controller: sifreController,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: "Şifre",
-                    prefixIcon: Icon(Icons.lock),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10)),
+                          borderRadius: BorderRadius.circular(10)),
+                    ),
+                    textInputAction: TextInputAction.done,
+                    enableSuggestions: true,
+                    autocorrect: true,
+                    keyboardType: TextInputType.visiblePassword,
                   ),
-                  textInputAction: TextInputAction.done,
-                  enableSuggestions: true,
-                  autocorrect: true,
-                  keyboardType: TextInputType.visiblePassword,
-                ),
-                SizedBox(height: 24),
-                
-                // Giriş butonu
-                _isLoading
-                    ? CircularProgressIndicator()
-                    : Row(
-                        children: [
-                          // Giris Yap butonu
-                          Expanded(
-                            flex: 1,
-                            child: ElevatedButton(
-                              onPressed: _login,
-                              style: ElevatedButton.styleFrom(
-                                  backgroundColor: Color(0xFF5181BE),
-                                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                                  minimumSize: Size(0, 50)),
-                              child: Text('Giriş Yap', style: TextStyle(fontSize: 16, color: Colors.white)),
+                  SizedBox(height: 24),
+                  
+                  // Giriş butonu
+                  _isLoading
+                      ? CircularProgressIndicator()
+                      : Row(
+                          children: [
+                            // Giris Yap butonu
+                            Expanded(
+                              flex: 1,
+                              child: ElevatedButton(
+                                onPressed: _login,
+                                style: ElevatedButton.styleFrom(
+                                    backgroundColor: Color(0xFF5181BE),
+                                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                                    minimumSize: Size(0, 50)),
+                                child: Text('Giriş Yap', style: TextStyle(fontSize: 16, color: Colors.white)),
+                              ),
                             ),
-                          ),
-                          SizedBox(width: 10),
-                          // Kayit Ol butonu
-                          Expanded(
-                            flex: 1,
-                            child: ElevatedButton(
-                              onPressed: _register,
-                              style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color.fromARGB(255, 240, 76, 64),
-                                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                                  minimumSize: Size(0, 50)),
-                              child: Text('Kayıt Ol', style: TextStyle(fontSize: 16, color: Colors.white)),
+                            SizedBox(width: 10),
+                            // Kayit Ol butonu
+                            Expanded(
+                              flex: 1,
+                              child: ElevatedButton(
+                                onPressed: _register,
+                                style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color.fromARGB(255, 240, 76, 64),
+                                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                                    minimumSize: Size(0, 50)),
+                                child: Text('Kayıt Ol', style: TextStyle(fontSize: 16, color: Colors.white)),
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-              ],
+                          ],
+                        ),
+                ],
+              ),
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 

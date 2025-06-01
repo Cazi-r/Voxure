@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/firebase_service.dart';
 import '../widgets/custom_drawer.dart';
+import '../widgets/base_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/custom_app_bar.dart';
@@ -290,14 +291,11 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: CustomAppBar(
-        title: 'Profil Guncelle',
-        showSaveButton: true,
-        onSavePressed: _saveProfile,
-      ),
-      drawer: CustomDrawer(),
-      body: Stack(
+    return BasePage(
+      title: 'Profil Guncelle',
+      showSaveButton: true,
+      onSavePressed: _saveProfile,
+      content: Stack(
         children: [
           _isLoading 
             ? Center(child: CircularProgressIndicator())

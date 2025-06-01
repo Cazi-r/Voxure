@@ -5,6 +5,7 @@ import '../services/firebase_service.dart';
 import '../services/survey_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../widgets/base_page.dart';
 
 /// SurveyPage: Kullanıcının anketlere oy verebildiği sayfa.
 ///
@@ -224,41 +225,44 @@ class SurveyPageState extends State<SurveyPage> {
   
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: CustomAppBar(
-        title: 'Anketler',
-        showInfoButton: true,
-        onInfoPressed: _showInfoDialog,
-        showSaveButton: true,
-        onSavePressed: () {
-          _showSaveConfirmationDialog();
-        },
-      ),
-      drawer: CustomDrawer(),
-      body: isLoading 
-          ? Center(child: CircularProgressIndicator())
-          : (userAge == null || (userCity == null && userSchool == null))
-              ? _buildProfileUpdateReminder()
-              : Column(
-                  children: [
-                    // Anket listesi
-                    Expanded(
-                      child: ListView.builder(
-                        padding: EdgeInsets.all(16),
-                        itemCount: surveys.length,
-                        itemBuilder: (context, index) {
-                          // Anketin gösterilip gösterilmeyeceğini kontrol et
-                          if (shouldShowSurvey(surveys[index])) {
-                            return createSurveyCard(index);
-                          } else {
-                            // Anketi gösterme
-                            return SizedBox.shrink();
-                          }
-                        },
+    return BasePage(
+      title: 'Anketler',
+      showInfoButton: true,
+      onInfoPressed: _showInfoDialog,
+      showSaveButton: true,
+      onSavePressed: () => _showSaveConfirmationDialog(),
+      content: _buildContent(),
+    );
+  }
+
+  Widget _buildContent() {
+    return Stack(
+      children: [
+        isLoading 
+            ? Center(child: CircularProgressIndicator())
+            : (userAge == null || (userCity == null && userSchool == null))
+                ? _buildProfileUpdateReminder()
+                : Column(
+                    children: [
+                      // Anket listesi
+                      Expanded(
+                        child: ListView.builder(
+                          padding: EdgeInsets.all(16),
+                          itemCount: surveys.length,
+                          itemBuilder: (context, index) {
+                            // Anketin gösterilip gösterilmeyeceğini kontrol et
+                            if (shouldShowSurvey(surveys[index])) {
+                              return createSurveyCard(index);
+                            } else {
+                              // Anketi gösterme
+                              return SizedBox.shrink();
+                            }
+                          },
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
+      ],
     );
   }
   

@@ -3,6 +3,7 @@ import '../widgets/custom_drawer.dart';
 import '../widgets/custom_app_bar.dart';
 import '../services/firebase_service.dart';
 import '../services/survey_service.dart';
+import '../widgets/base_page.dart';
 
 /// StatisticsPage: Anketlerin oy istatistiklerini gösteren sayfa.
 ///
@@ -95,26 +96,29 @@ class StatisticsPageState extends State<StatisticsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: CustomAppBar(
-        title: 'Istatistikler',
-        showInfoButton: true,
-        onInfoPressed: () {
-          _showInfoDialog(context);
-        },
-      ),
-      drawer: CustomDrawer(),
-      body: isLoading 
-          ? Center(child: CircularProgressIndicator())
-          : surveys.isEmpty
-              ? _buildEmptySurveyState()
-              : ListView.builder(
-                  padding: EdgeInsets.all(16),
-                  itemCount: surveys.length,
-                  itemBuilder: (context, index) {
-                    return createStatisticsCard(index);
-                  },
-                ),
+    return BasePage(
+      title: 'Istatistikler',
+      showRefreshButton: true,
+      onRefreshPressed: _loadSurveys,
+      content: _buildContent(),
+    );
+  }
+
+  Widget _buildContent() {
+    return Stack(
+      children: [
+        isLoading 
+            ? Center(child: CircularProgressIndicator())
+            : surveys.isEmpty
+                ? _buildEmptySurveyState()
+                : ListView.builder(
+                    padding: EdgeInsets.all(16),
+                    itemCount: surveys.length,
+                    itemBuilder: (context, index) {
+                      return createStatisticsCard(index);
+                    },
+                  ),
+      ],
     );
   }
 
