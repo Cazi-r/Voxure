@@ -14,7 +14,7 @@ class _LoginPageState extends State<LoginPage> {
   final FirebaseService _firebaseService = FirebaseService();
   
   // Text controller'lar
-  final tcController = TextEditingController();
+  final emailController = TextEditingController();
   final sifreController = TextEditingController();
   
   // Loading durumu
@@ -54,22 +54,18 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 SizedBox(height: 24),
                 
-                // TC Kimlik No giriş alanı
+                // E-posta giriş alanı
                 TextField(
-                  controller: tcController,
+                  controller: emailController,
                   decoration: InputDecoration(
-                      labelText: "TC Kimlik No",
-                      prefixIcon: Icon(Icons.person),
+                      labelText: "E-posta",
+                      prefixIcon: Icon(Icons.email),
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10))),
-                  keyboardType: TextInputType.number,
-                  maxLength: 11,
+                  keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   enableSuggestions: true,
-                  autocorrect: true,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly, // Sadece rakam girişine izin verir
-                  ],
+                  autocorrect: false,
                 ),
                 SizedBox(height: 12),
                 
@@ -130,26 +126,23 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  // TC kimlik numarası geçerlilik kontrolü
-  bool _isValidTc(String? tc) {
-    if (tc == null || tc.isEmpty) return false;
-    if (tc.length != 11) return false;
-    if (tc[0] == '0') return false;
-    // Sadece rakam içerip içermediğini kontrol et
-    if (!RegExp(r'^[0-9]+$').hasMatch(tc)) return false;
-    return true;
+  // E-posta geçerlilik kontrolü
+  bool _isValidEmail(String? email) {
+    if (email == null || email.isEmpty) return false;
+    // Basit e-posta doğrulama
+    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
   }
 
   // Giriş işlemi
   void _login() async {
     // Input kontrolü
-    if (!_isValidTc(tcController.text)) {
-      _showMessage("Hata", "Geçerli bir TC kimlik numarası giriniz.");
+    if (!_isValidEmail(emailController.text)) {
+      _showMessage("Hata", "Gecerli bir e-posta adresi giriniz.");
       return;
     }
     
     if (sifreController.text.isEmpty) {
-      _showMessage("Hata", "Şifre alanı boş bırakılamaz.");
+      _showMessage("Hata", "Sifre alani bos birakilamaz.");
       return;
     }
 
@@ -161,7 +154,7 @@ class _LoginPageState extends State<LoginPage> {
     try {      
       // Firebase ile giriş kontrolü
       Map<String, dynamic> result = await _firebaseService.loginUser(
-        tcKimlik: tcController.text,
+        email: emailController.text,
         sifre: sifreController.text,
       );
       
@@ -208,9 +201,9 @@ class _LoginPageState extends State<LoginPage> {
   
   // Şifre sıfırlama işlemi
   void _resetPassword() async {
-    // TC numarası doğrulaması
-    if (!_isValidTc(tcController.text)) {
-      _showMessage("Hata", "Şifre sıfırlamak için geçerli bir TC kimlik numarası giriniz.");
+    // E-posta doğrulaması
+    if (!_isValidEmail(emailController.text)) {
+      _showMessage("Hata", "Sifre sifirlamak icin gecerli bir e-posta adresi giriniz.");
       return;
     }
     
@@ -219,7 +212,7 @@ class _LoginPageState extends State<LoginPage> {
     });
     
     try {
-      Map<String, dynamic> result = await _firebaseService.resetPassword(tcController.text);
+      Map<String, dynamic> result = await _firebaseService.resetPassword(emailController.text);
       
       setState(() {
         _isLoading = false;

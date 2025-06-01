@@ -12,7 +12,12 @@
           "package_name": "com.example.vote_app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "375193215607-h01ipog3kfh2fk0igl4pt3cimn6rfklr.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBuztfsQyj50mqsYgXF_NbAfTZOKzbPvkA"
@@ -20,7 +25,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "375193215607-h01ipog3kfh2fk0igl4pt3cimn6rfklr.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

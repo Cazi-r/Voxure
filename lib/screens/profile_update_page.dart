@@ -16,7 +16,6 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
   
   User? currentUser;
   String? userEmail;
-  String? tcKimlik;
   
   TextEditingController _nameController = TextEditingController();
   TextEditingController _surnameController = TextEditingController();
@@ -123,10 +122,6 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
       if (currentUser != null) {
         userEmail = currentUser!.email;
         
-        if (userEmail != null) {
-          tcKimlik = userEmail!.split('@')[0];
-        }
-        
         DocumentSnapshot userDoc = await _firestore
             .collection('users')
             .doc(currentUser!.uid)
@@ -229,7 +224,7 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
     try {
       if (currentUser != null) {
         await _firestore.collection('users').doc(currentUser!.uid).set({
-          'tcKimlik': tcKimlik,
+          'email': userEmail,
           'name': _nameController.text.trim(),
           'surname': _surnameController.text.trim(),
           'birthDate': selectedDate,
@@ -311,7 +306,7 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // TC Kimlik bilgisi
+                    // E-posta bilgisi
                     Container(
                       padding: EdgeInsets.all(12),
                       decoration: BoxDecoration(
@@ -319,33 +314,28 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: Colors.grey.shade300),
                       ),
-                      child: Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.person, color: Color(0xFF5181BE), size: 22),
-                          SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "TC Kimlik Numaranız",
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              Text(
-                                tcKimlik ?? "Yükleniyor...",
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
+                          Text(
+                            "E-posta Adresiniz",
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            userEmail ?? "Yükleniyor...",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ],
                       ),
                     ),
-                    SizedBox(height: 18),
+                    SizedBox(height: 16),
                     
                     // Form başlığı
                     Row(

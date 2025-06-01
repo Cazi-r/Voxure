@@ -11,7 +11,7 @@ class RegisterPage extends StatefulWidget {
 class _RegisterPageState extends State<RegisterPage> {
   final FirebaseService _firebaseService = FirebaseService();
   
-  final tcController = TextEditingController();
+  final emailController = TextEditingController();
   final sifreController = TextEditingController();
   final sifreTekrarController = TextEditingController();
   
@@ -22,7 +22,7 @@ class _RegisterPageState extends State<RegisterPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(
-        title: 'Kayit Ol',
+        title: 'Kayıt Ol',
       ),
       body: Stack(
         children: [
@@ -82,7 +82,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
                       SizedBox(height: 8),
                       Text(
-                        "Hesap oluşturmak için sadece TC kimlik numarası ve şifre gerekiyor. Diğer bilgilerinizi (doğum tarihi, il ve okul) daha sonra girebilirsiniz.",
+                        "Hesap oluşturmak için sadece e-posta ve şifre gerekiyor. Diğer bilgilerinizi (doğum tarihi, il ve okul) daha sonra girebilirsiniz.",
                         style: TextStyle(color: Colors.blue.shade800),
                       ),
                     ],
@@ -91,18 +91,15 @@ class _RegisterPageState extends State<RegisterPage> {
                 SizedBox(height: 24),
                 
                 TextField(
-                  controller: tcController,
+                  controller: emailController,
                   decoration: InputDecoration(
-                    labelText: "TC Kimlik No",
-                    prefixIcon: Icon(Icons.person),
+                    labelText: "E-posta",
+                    prefixIcon: Icon(Icons.email),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10))
                   ),
-                  keyboardType: TextInputType.number,
-                  maxLength: 11,
+                  keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                  ],
+                  autocorrect: false,
                 ),
                 SizedBox(height: 20),
                 
@@ -167,13 +164,12 @@ class _RegisterPageState extends State<RegisterPage> {
                       CircularProgressIndicator(
                         color: const Color.fromARGB(255, 240, 76, 64),
                       ),
-                      SizedBox(height: 24),
+                      SizedBox(height: 20),
                       Text(
                         _loadingMessage,
                         style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
@@ -186,9 +182,14 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
   
+  bool _isValidEmail(String? email) {
+    if (email == null || email.isEmpty) return false;
+    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
+  }
+  
   void _registerUser() async {
-    if (!_isValidTc(tcController.text)) {
-      _showMessage("Hata", "Geçerli bir TC kimlik numarası giriniz.");
+    if (!_isValidEmail(emailController.text)) {
+      _showMessage("Hata", "Geçerli bir e-posta adresi giriniz.");
       return;
     }
     
@@ -214,28 +215,19 @@ class _RegisterPageState extends State<RegisterPage> {
     
     try {
       Map<String, dynamic> result = await _firebaseService.registerUser(
-        tcKimlik: tcController.text,
+        email: emailController.text,
         sifre: sifreController.text,
       );
-      
-      setState(() {
-        _loadingMessage = "Giriş yapılıyor...";
-      });
       
       setState(() {
         _isLoading = false;
       });
       
-      if (_firebaseService.isUserLoggedIn()) {
-        Navigator.pushReplacementNamed(context, '/home');
-        return;
-      }
-      
       if (result['success']) {
         _showMessage(
           "Kayıt Başarılı", 
           "Hesabınız başarıyla oluşturuldu.",
-          onPressed: () {
+          onDismissed: () {
             Navigator.pushReplacementNamed(context, '/home');
           }
         );
@@ -246,7 +238,7 @@ class _RegisterPageState extends State<RegisterPage> {
           _showMessage(
             "Dikkat", 
             errorMessage,
-            onPressed: () {
+            onDismissed: () {
               Navigator.pushReplacementNamed(context, '/home');
             }
           );
@@ -263,7 +255,7 @@ class _RegisterPageState extends State<RegisterPage> {
         _showMessage(
           "Kayıt Başarılı", 
           "Hesabınız oluşturuldu.",
-          onPressed: () {
+          onDismissed: () {
             Navigator.pushReplacementNamed(context, '/home');
           }
         );
@@ -273,7 +265,7 @@ class _RegisterPageState extends State<RegisterPage> {
     }
   }
   
-  void _showMessage(String title, String message, {Function()? onPressed}) {
+  void _showMessage(String title, String message, {Function? onDismissed}) {
     showDialog(
       context: context,
       builder: (context) {
@@ -282,20 +274,17 @@ class _RegisterPageState extends State<RegisterPage> {
           content: Text(message),
           actions: [
             TextButton(
-              onPressed: onPressed ?? () => Navigator.pop(context),
+              onPressed: () {
+                Navigator.pop(context);
+                if (onDismissed != null) {
+                  onDismissed();
+                }
+              },
               child: Text("Tamam"),
             ),
           ],
         );
       },
     );
-  }
-  
-  bool _isValidTc(String? tc) {
-    if (tc == null || tc.isEmpty) return false;
-    if (tc.length != 11) return false;
-    if (tc[0] == '0') return false;
-    if (!RegExp(r'^[0-9]+$').hasMatch(tc)) return false;
-    return true;
   }
 } 

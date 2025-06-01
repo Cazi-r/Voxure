@@ -237,9 +237,7 @@ class _HomePageState extends State<HomePage> {
 
   // Kullanici bilgi karti
   Widget _createUserCard() {
-    // Email adresinden TC kimlik numarasini cikar (ornek@example.com)
-    String email = currentUser?.email ?? '';
-    String tcKimlik = email.split('@')[0];
+    String? email = currentUser?.email;
     
     return Container(
       padding: EdgeInsets.all(16),
@@ -268,7 +266,7 @@ class _HomePageState extends State<HomePage> {
               children: [
                 // Hosgeldin mesaji
                 Text(
-                  'Hoşgeldiniz',
+                  'Hosgeldiniz',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -286,11 +284,9 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                   ),
-                // TC kimlik gosterimi
+                // E-posta gosterimi
                 Text(
-                  tcKimlik.length >= 11 
-                    ? 'TC: ${tcKimlik.substring(0, 3)}*****${tcKimlik.substring(8, 11)}'
-                    : 'TC: $tcKimlik',
+                  email ?? "",
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey[700],

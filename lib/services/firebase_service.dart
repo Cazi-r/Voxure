@@ -10,22 +10,17 @@ class FirebaseService {
   factory FirebaseService() => _instance;
   FirebaseService._internal();
 
-  // TC numarasını email formatına çevirir
-  String _convertTcToEmail(String tcKimlik) {
-    return "$tcKimlik@example.com";
-  }
-  
-  // Kullanıcı kayıt işlemi - sadece TC ve şifre
+  // Kullanıcı kayıt işlemi
   Future<Map<String, dynamic>> registerUser({
-    required String tcKimlik,
+    required String email,
     required String sifre,
   }) async {
     try {
-      // TC kimlik kontrolü
-      if (tcKimlik.length != 11 || !RegExp(r'^\d+$').hasMatch(tcKimlik)) {
+      // Email kontrolü
+      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
         return {
           'success': false, 
-          'message': 'Geçersiz TC kimlik numarası.'
+          'message': 'Gecersiz e-posta adresi.'
         };
       }
       
@@ -33,12 +28,9 @@ class FirebaseService {
       if (sifre.length < 6) {
         return {
           'success': false, 
-          'message': 'Şifre en az 6 karakter olmalıdır.'
+          'message': 'Sifre en az 6 karakter olmalidir.'
         };
       }
-      
-      // Email formatı
-      String email = _convertTcToEmail(tcKimlik);
       
       // Kullanıcı oluştur
       try {
@@ -49,39 +41,25 @@ class FirebaseService {
         
         return {
           'success': true,
-          'message': 'Kullanıcı başarıyla kaydedildi.',
+          'message': 'Kullanici basariyla kaydedildi.',
           'userId': userCredential.user!.uid
         };
       } on FirebaseAuthException catch (e) {
         // Bu kullanıcı zaten kayıtlı mı kontrol et
         if (e.code == 'email-already-in-use') {
-          // Bu durumda kullanıcı zaten kayıtlı, direkt giriş yapmayı deneyelim
-          try {
-            UserCredential userCredential = await _auth.signInWithEmailAndPassword(
-              email: email,
-              password: sifre,
-            );
-            
-            return {
-              'success': true,
-              'message': 'TC kimlik zaten kayıtlı, giriş yapıldı.',
-              'userId': userCredential.user!.uid
-            };
-          } catch (loginError) {
-            return {
-              'success': false,
-              'message': 'Bu TC kimlik numarası zaten kayıtlı ama giriş yapılamadı. Doğru şifreyi girin.',
-              'error': loginError.toString()
-            };
-          }
+          return {
+            'success': false,
+            'message': 'Bu e-posta adresi zaten kayitli.',
+            'error': e.toString()
+          };
         }
         
-        String message = 'Kayıt sırasında bir hata oluştu.';
+        String message = 'Kayit sirasinda bir hata olustu.';
         
         if (e.code == 'weak-password') {
-          message = 'Daha güçlü bir şifre seçin.';
+          message = 'Daha guclu bir sifre secin.';
         } else if (e.code == 'invalid-email') {
-          message = 'Geçersiz bir TC kimlik formatı.';
+          message = 'Gecersiz bir e-posta formati.';
         }
         
         return {
@@ -93,7 +71,7 @@ class FirebaseService {
     } catch (e) {
       return {
         'success': false,
-        'message': 'Beklenmeyen bir hata oluştu.',
+        'message': 'Beklenmeyen bir hata olustu.',
         'error': e.toString()
       };
     }
@@ -101,20 +79,17 @@ class FirebaseService {
   
   // Kullanıcı giriş işlemi
   Future<Map<String, dynamic>> loginUser({
-    required String tcKimlik,
+    required String email,
     required String sifre,
   }) async {
     try {
-      // TC kimlik kontrolü
-      if (tcKimlik.length != 11 || !RegExp(r'^\d+$').hasMatch(tcKimlik)) {
+      // Email kontrolü
+      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
         return {
           'success': false, 
-          'message': 'Geçersiz TC kimlik numarası.'
+          'message': 'Gecersiz e-posta adresi.'
         };
       }
-      
-      // Email formatı
-      String email = _convertTcToEmail(tcKimlik);
       
       // Giriş yap
       try {
@@ -125,20 +100,20 @@ class FirebaseService {
         
         return {
           'success': true,
-          'message': 'Giriş başarılı.',
+          'message': 'Giris basarili.',
           'userId': userCredential.user!.uid
         };
       } on FirebaseAuthException catch (e) {
-        String message = 'Giriş sırasında bir hata oluştu.';
+        String message = 'Giris sirasinda bir hata olustu.';
         
         if (e.code == 'user-not-found') {
-          message = 'Bu TC kimlik numarasına sahip kullanıcı bulunamadı.';
+          message = 'Bu e-posta adresine sahip kullanici bulunamadi.';
         } else if (e.code == 'wrong-password') {
-          message = 'Hatalı şifre.';
+          message = 'Hatali sifre.';
         } else if (e.code == 'invalid-email') {
-          message = 'Geçersiz bir TC kimlik formatı.';
+          message = 'Gecersiz bir e-posta formati.';
         } else if (e.code == 'user-disabled') {
-          message = 'Bu kullanıcı hesabı devre dışı bırakılmış.';
+          message = 'Bu kullanici hesabi devre disi birakilmis.';
         }
         
         return {
@@ -150,7 +125,7 @@ class FirebaseService {
     } catch (e) {
       return {
         'success': false,
-        'message': 'Beklenmeyen bir hata oluştu.',
+        'message': 'Beklenmeyen bir hata olustu.',
         'error': e.toString()
       };
     }
@@ -162,12 +137,12 @@ class FirebaseService {
       await _auth.signOut();
       return {
         'success': true,
-        'message': 'Çıkış başarılı.'
+        'message': 'Çikis basarili.'
       };
     } catch (e) {
       return {
         'success': false,
-        'message': 'Çıkış sırasında bir hata oluştu.',
+        'message': 'Çikis sirasinda bir hata olustu.',
         'error': e.toString()
       };
     }
@@ -185,20 +160,20 @@ class FirebaseService {
   }
   
   // Şifre sıfırlama
-  Future<Map<String, dynamic>> resetPassword(String tcKimlik) async {
+  Future<Map<String, dynamic>> resetPassword(String email) async {
     try {
       await _auth.sendPasswordResetEmail(
-        email: _convertTcToEmail(tcKimlik),
+        email: email,
       );
       
       return {
         'success': true,
-        'message': 'Şifre sıfırlama bağlantısı gönderildi.'
+        'message': 'Sifre sifirlama baglantisi gonderildi.'
       };
     } catch (e) {
       return {
         'success': false,
-        'message': 'Şifre sıfırlama işlemi başarısız.',
+        'message': 'Sifre sifirlama islemi basarisiz.',
         'error': e.toString()
       };
     }
