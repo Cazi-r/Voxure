@@ -9,7 +9,6 @@ import 'screens/admin/survey_admin.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'services/firebase_service.dart';
-import 'services/blockchain_service.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/foundation.dart';
 
@@ -25,12 +24,10 @@ void main() async {
     
     print('Firebase initialized successfully');
     
-    // Blockchain servisini başlat
-    final blockchainService = BlockchainService();
-    // Burada herhangi bir metodu çağırmamıza gerek yok,
-    // constructor içinde _initialize() metodu çağrılacak
+    // Firebase servisini başlat
+    final firebaseService = FirebaseService();
     
-    print('Blockchain service initialized');
+    print('Firebase service initialized');
   } catch (e) {
     print('Initialization error: $e');
   }

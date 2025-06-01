@@ -1,13 +1,13 @@
-# Voxure - Blockchain Destekli Oylama Sistemi
+# Voxure - Firebase Tabanli Oylama Sistemi
 
 ## Genel Bakis
 
-Voxure, demografik verilere gore filtrelenmis anketlerin sunuldugu ve oylarin guvenilir bir sekilde blockchain uzerinde kaydedildigi bir mobil uygulamadir. Bu sistem, geleneksel oylama sistemlerindeki guvenlik ve seffaflik sorunlarini cozmeyi amaclamaktadir.
+Voxure, demografik verilere gore filtrelenmis anketlerin sunuldugu ve oylarin guvenilir bir sekilde Firebase uzerinde kaydedildigi bir mobil uygulamadir. Bu sistem, geleneksel oylama sistemlerindeki guvenlik ve seffaflik sorunlarini cozmeyi amaclamaktadir.
 
 ## Ozellikler
 
 - **Guvenli Kimlik Dogrulama**: Firebase Authentication ile guvenli kullanici girisi ve kayit
-- **Blockchain Tabanli Oylama**: Oylarin degistirilemez sekilde Ethereum blockchain'inde saklanmasi
+- **Gercek Zamanli Veri**: Firebase Firestore ile aninda guncellenen oy verileri
 - **Demografik Filtreleme**: Kullanicilara yas, cinsiyet, egitim durumu gibi demografik ozelliklerine gore uygun anketlerin gosterilmesi
 - **Istatistik Goruntuleme**: Anket sonuclarinin grafikler ile gosterilmesi
 - **Cok Dilli Destek**: Turkce ve Ingilizce dil destegi
@@ -15,9 +15,9 @@ Voxure, demografik verilere gore filtrelenmis anketlerin sunuldugu ve oylarin gu
 ## Teknoloji Yigini
 
 - **Frontend**: Flutter (Dart)
-- **Kimlik Dogrulama ve Veritabani**: Firebase (Authentication, Firestore)
-- **Blockchain**: Ethereum (web3dart)
+- **Backend**: Firebase (Authentication, Firestore)
 - **Coklu Dil Destegi**: Flutter Localization
+- **Grafikler**: fl_chart
 
 ## Baslangic
 
@@ -26,8 +26,7 @@ Voxure, demografik verilere gore filtrelenmis anketlerin sunuldugu ve oylarin gu
 - Flutter SDK (en son surum)
 - Dart SDK (en son surum)
 - Firebase hesabi
-- Ethereum cuzdan (Metamask onerilir)
-- Infura API anahtari (blockchain erisimi icin)
+- Firebase CLI
 
 ### Kurulum
 
@@ -46,38 +45,39 @@ flutter pub get
    - Firebase konsolunda yeni bir proje olusturun
    - Flutter uygulamanizi Firebase'e ekleyin
    - Authentication ve Firestore hizmetlerini etkinlestirin
+   - Firebase CLI ile projeyi baglatin:
+   ```bash
+   firebase login
+   flutterfire configure
+   ```
 
-4. Ethereum ayarlarini yapin:
-   - lib/services/blockchain_service.dart dosyasindaki Infura API anahtarinizi guncelleyin
-   - Akilli kontrat adresi ve ABI'yi ayarlayin
-
-5. Uygulamayi calistirin:
+4. Uygulamayi calistirin:
 ```bash
 flutter run
 ```
 
-## Blockchain Entegrasyonu
+## Firebase Entegrasyonu
 
-Voxure, oylarin degistirilemezligini ve seffafligini saglamak icin Ethereum blockchain teknolojisini kullanir:
+Voxure, kullanici kimlik dogrulama ve veri depolama icin Firebase hizmetlerini kullanir:
 
-- Her oy, kullanici bilgileri gizlenerek blockchain uzerinde saklanir
-- Akilli kontratlar sayesinde oylar, degistirilemez ve dogrulanabilir
-- Web3dart kutuphanesi kullanilarak Ethereum agina baglanilir
+- **Authentication**: Guvenli kullanici girisi ve kayit islemleri
+- **Firestore**: Anket ve oy verilerinin gercek zamanli depolanmasi
+- **Security Rules**: Veri erisim kontrolu ve guvenlik kurallari
 
 ## Guvenlik Ozellikleri
 
 - Kullanici kimlik bilgileri Firebase Authentication ile guvenli sekilde saklanir
-- Blockchain'de saklanan veriler kriptografik olarak imzalanir
-- Hassas kullanici verileri hash'lenerek saklanir
-- Guncellenemez kayit sistemi ile veri butunlugu korunur
+- Firestore guvenlik kurallari ile veri erisimi kontrol edilir
+- Hassas kullanici verileri sifrelenerek saklanir
+- Gercek zamanli veri senkronizasyonu ile veri tutarliligi saglanir
 
 ## Mimari
 
 Uygulama su katmanlardan olusur:
 
 1. **Sunum Katmani**: Flutter UI bilesenleri
-2. **Is Mantigi Katmani**: Servisler (Firebase ve Blockchain)
-3. **Veri Katmani**: Firebase Firestore ve Ethereum Blockchain
+2. **Is Mantigi Katmani**: Firebase servisleri
+3. **Veri Katmani**: Firebase Firestore
 
 ## Katki Saglama
 

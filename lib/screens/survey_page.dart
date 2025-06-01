@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../widgets/custom_drawer.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import '../services/blockchain_service.dart';
+import '../services/firebase_service.dart';
 import '../services/survey_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// SurveyPage: Kullanıcının anketlere oy verebildiği sayfa.
 ///
@@ -15,10 +15,8 @@ class SurveyPage extends StatefulWidget {
 }
 
 class SurveyPageState extends State<SurveyPage> {
-  // Firebase ve blockchain servisleri
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final BlockchainService _blockchainService = BlockchainService();
+  // Servisler
+  final FirebaseService _firebaseService = FirebaseService();
   final SurveyService _surveyService = SurveyService();
   
   // Kullanıcı bilgileri
@@ -27,11 +25,9 @@ class SurveyPageState extends State<SurveyPage> {
   String? userCity;
   String? userSchool;
   
-  // Veri yükleniyor mu?
-  bool isLoading = true;
-
-  // Anket verileri listesi
+  // Anket verileri
   List<Map<String, dynamic>> surveys = [];
+  bool isLoading = true;
 
   @override
   void initState() {
@@ -39,32 +35,31 @@ class SurveyPageState extends State<SurveyPage> {
     _loadUserData();
   }
 
-  /// Kullanıcının profil bilgilerini Firestore'dan yükler
+  /// Kullanıcı bilgilerini yükler
   Future<void> _loadUserData() async {
     setState(() {
       isLoading = true;
     });
-    
+
     try {
       // Mevcut kullanıcı bilgilerini al
-      User? currentUser = _auth.currentUser;
+      User? currentUser = FirebaseAuth.instance.currentUser;
       
       if (currentUser != null) {
         userId = currentUser.uid;
         
         // Kullanıcı profil bilgilerini Firestore'dan al
-        DocumentSnapshot userDoc = await _firestore
+        DocumentSnapshot userDoc = await FirebaseFirestore.instance
             .collection('users')
             .doc(userId)
             .get();
-        
+
         if (userDoc.exists) {
           Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
           
-          // İl ve okul bilgisini al
           setState(() {
-            userCity = userData['city'] as String?;
-            userSchool = userData['school'] as String?;
+            userCity = userData['city'];
+            userSchool = userData['school'];
           });
           
           // Doğum tarihini al ve yaşı hesapla
@@ -94,12 +89,9 @@ class SurveyPageState extends State<SurveyPage> {
         
         // Anketleri Firestore'dan yükle
         await _loadSurveys();
-        
-        // Kullanıcı bilgileri yüklendikten sonra blockchain verilerini yükle
-        await _loadVotesFromBlockchain();
       }
     } catch (e) {
-      // Hata durumunda sessizce devam et
+      print('Kullanici bilgileri yuklenirken hata: $e');
     } finally {
       setState(() {
         isLoading = false;
@@ -128,63 +120,15 @@ class SurveyPageState extends State<SurveyPage> {
     }
   }
   
-  /// Blockchain'den oy verilerini yükler
-  Future<void> _loadVotesFromBlockchain() async {
-    try {
-      if (userId == null) return;
-      
-      // Her anket için ayrı ayrı blockchain'den oy verilerini al
-      for (var i = 0; i < surveys.length; i++) {
-        String surveyId = surveys[i]['id'];
-        
-        // Blockchain'den bu anket için oy verileri al
-        Map<int, int> voteData = await _blockchainService.getSurveyVotes(surveyId);
-        
-        if (voteData.isNotEmpty) {
-          // Tüm anket oylarını güncelle
-          List<int> newVotes = List<int>.filled(surveys[i]['secenekler'].length, 0);
-          voteData.forEach((optionIndex, count) {
-            if (optionIndex >= 0 && optionIndex < newVotes.length) {
-              newVotes[optionIndex] = count;
-            }
-          });
-          
-          // Bu anket için toplam oylar
-          surveys[i]['oylar'] = newVotes;
-          
-          // Kullanıcının bu anket için önceden oy verip vermediğini kontrol et
-          Map<String, dynamic>? userVote = await _blockchainService.getUserVote(userId!, surveyId);
-          
-          if (userVote != null) {
-            // Kullanıcının verdiği oyu bulduysak, anketi kilitli olarak işaretle
-            int optionIndex = userVote['optionIndex'] as int;
-            
-            setState(() {
-              surveys[i]['oyVerildi'] = true;
-              surveys[i]['kilitlendi'] = true;
-              surveys[i]['secilenSecenek'] = optionIndex;
-            });
-          }
-        }
-      }
-    } catch (e) {
-      print('Blockchain verileri yuklenirken hata: $e');
-      // Hata durumunda sessizce devam et
-    }
-  }
-  
   /// Kullanıcının belirli bir ankete oy verip vermediğini kontrol eder
-  Future<bool> _checkIfUserVotedForSurvey(String surveyId) async {
+  Future<bool> _hasUserVoted(String surveyId) async {
+    if (userId == null) return false;
+    
     try {
-      if (userId == null) return false;
-      
-      // BlockchainService'in getUserVote metodunu kullan
-      Map<String, dynamic>? userVote = await _blockchainService.getUserVote(userId!, surveyId);
-      
-      // Eğer kullanıcı oyu bulunduysa true döndür
+      final userVote = await _firebaseService.getUserVote(userId!, surveyId);
       return userVote != null;
     } catch (e) {
-      // Hata durumunda sessizce devam et
+      print('Oy kontrolu sirasinda hata: $e');
       return false;
     }
   }
@@ -498,7 +442,7 @@ class SurveyPageState extends State<SurveyPage> {
     );
   }
 
-  /// Tüm oyları blockchain'e kaydeder
+  /// Tüm oyları Firebase'e kaydeder
   void _saveAllVotes() async {
     if (userId == null) return;
     
@@ -528,82 +472,43 @@ class SurveyPageState extends State<SurveyPage> {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        return AlertDialog(
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text('Oylarınız kaydediliyor...'),
-            ],
-          ),
-        );
+        return Center(child: CircularProgressIndicator());
       },
     );
     
-    // Tüm oyları kaydet
     try {
-      // Blockchain entegrasyonu: Tüm oyları kaydet
-      bool success = await _blockchainService.saveBulkVotes(votesToSave);
+      // Oyları Firebase'e kaydet
+      final success = await _firebaseService.saveBulkVotes(votesToSave);
       
-      // Dialog'u kapat
+      // Progress indicator'ı kapat
       Navigator.of(context).pop();
       
       if (success) {
-        // Kullanıcıyı bilgilendir
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Tüm seçimleriniz başarıyla kaydedildi.'),
-            duration: Duration(seconds: 3),
-          ),
-        );
-        
-        // Oyların değiştirilememesi için sadece kaydedilen anketleri kilitle
+        // Başarılı kayıt sonrası anketleri kilitle
         setState(() {
-          for (var i = 0; i < surveys.length; i++) {
-            if (surveys[i]['oyVerildi'] == true && surveys[i]['kilitlendi'] != true) {
-              surveys[i]['kilitlendi'] = true;
+          for (var survey in surveys) {
+            if (survey['oyVerildi'] == true && survey['kilitlendi'] != true) {
+              survey['kilitlendi'] = true;
             }
           }
         });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Oylarınız başarıyla kaydedildi')),
+        );
       } else {
-        // Başarısız işlem
-        _showBlockchainErrorDialog();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Bazı oylar kaydedilemedi, lütfen tekrar deneyin')),
+        );
       }
     } catch (e) {
-      // Dialog'u kapat
+      // Progress indicator'ı kapat
       Navigator.of(context).pop();
-      _showBlockchainErrorDialog();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Oylar kaydedilirken bir hata oluştu')),
+      );
     }
-  }
-  
-  /// Blockchain hatası için dialog
-  void _showBlockchainErrorDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Kayıt Hatası'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Oylarınız kaydedilirken bir sorun oluştu.'),
-              SizedBox(height: 16),
-              Text('Lütfen daha sonra tekrar deneyiniz.'),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text('Anladım'),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   /// Anket bilgisi dialog penceresi

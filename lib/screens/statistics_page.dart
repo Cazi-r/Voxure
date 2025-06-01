@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import '../widgets/custom_drawer.dart';
-import '../services/blockchain_service.dart';
+import '../services/firebase_service.dart';
 import '../services/survey_service.dart';
 
 /// StatisticsPage: Anketlerin oy istatistiklerini gösteren sayfa.
 ///
-/// Bu sayfa, blockchain üzerinde kaydedilmiş oy verilerini görselleştirir
+/// Bu sayfa, Firebase'de kaydedilmiş oy verilerini görselleştirir
 /// ve her anket seçeneği için oy sayıları ve yüzdelerini gösterir.
 class StatisticsPage extends StatefulWidget {
   @override
@@ -14,7 +14,7 @@ class StatisticsPage extends StatefulWidget {
 
 class StatisticsPageState extends State<StatisticsPage> {
   // Servisler
-  final BlockchainService _blockchainService = BlockchainService();
+  final FirebaseService _firebaseService = FirebaseService();
   final SurveyService _surveyService = SurveyService();
   
   // Veriler yükleniyor mu?
@@ -29,7 +29,7 @@ class StatisticsPageState extends State<StatisticsPage> {
     _loadSurveys();
   }
 
-  /// Firestore'dan anketleri yükler ve sonra blockchain'den oyları alır
+  /// Firestore'dan anketleri yükler ve sonra oyları alır
   Future<void> _loadSurveys() async {
     setState(() {
       isLoading = true;
@@ -43,8 +43,8 @@ class StatisticsPageState extends State<StatisticsPage> {
         surveys = loadedSurveys;
       });
       
-      // Blockchain'den oy verilerini yükle
-      await loadDataFromBlockchain();
+      // Firebase'den oy verilerini yükle
+      await loadDataFromFirebase();
     } catch (e) {
       print('Anketleri yuklerken hata: $e');
       setState(() {
@@ -53,20 +53,20 @@ class StatisticsPageState extends State<StatisticsPage> {
     }
   }
 
-  /// Blockchain'den oy verilerini yükler
-  Future<void> loadDataFromBlockchain() async {
+  /// Firebase'den oy verilerini yükler
+  Future<void> loadDataFromFirebase() async {
     try {
-      // Her anket için ayrı ayrı blockchain'den verileri al
+      // Her anket için ayrı ayrı Firebase'den verileri al
       for (int i = 0; i < surveys.length; i++) {
         String surveyId = surveys[i]['id'];
         
         // Bu anket için oy verilerini al
-        Map<int, int> voteData = await _blockchainService.getSurveyVotes(surveyId);
+        Map<int, int> voteData = await _firebaseService.getSurveyVotes(surveyId);
         
         // Oy sayılarını sıfırla
         List<int> newVotes = List<int>.filled(surveys[i]['secenekler'].length, 0);
         
-        // Blockchain'den gelen oy verilerini işle
+        // Firebase'den gelen oy verilerini işle
         voteData.forEach((optionIndex, count) {
           if (optionIndex >= 0 && optionIndex < newVotes.length) {
             newVotes[optionIndex] = count;
@@ -81,7 +81,7 @@ class StatisticsPageState extends State<StatisticsPage> {
         }
       }
     } catch (e) {
-      print('Blockchain verileri yuklenirken hata: $e');
+      print('Firebase verileri yuklenirken hata: $e');
       // Hata durumunda sessizce devam et
     } finally {
       if (mounted) {
