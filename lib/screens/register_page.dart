@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/firebase_service.dart';
 import 'package:flutter/services.dart';
+import '../widgets/custom_app_bar.dart';
 
 class RegisterPage extends StatefulWidget {
   @override
@@ -20,13 +21,8 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Color(0xFF5181BE),
-        title: Text("Kayıt Sayfası"),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pushReplacementNamed(context, '/'),
-        ),
+      appBar: CustomAppBar(
+        title: 'Kayit Ol',
       ),
       body: Stack(
         children: [

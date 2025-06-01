@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'survey_page.dart';
 import '../services/firebase_service.dart';
 import 'package:flutter/services.dart';
+import '../widgets/custom_app_bar.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -22,9 +23,8 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Color(0xFF5181BE),
-        title: Text("Giriş Sayfası"),
+      appBar: CustomAppBar(
+        title: 'Giris Yap',
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

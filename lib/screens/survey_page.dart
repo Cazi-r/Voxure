@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/custom_drawer.dart';
+import '../widgets/custom_app_bar.dart';
 import '../services/firebase_service.dart';
 import '../services/survey_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -224,25 +225,14 @@ class SurveyPageState extends State<SurveyPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Color(0xFF5181BE),
-        title: Text('Anketler'),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.info_outline),
-            tooltip: 'Anket Bilgisi',
-            onPressed: () {
-              _showInfoDialog();
-            },
-          ),
-          IconButton(
-            icon: Icon(Icons.save),
-            tooltip: 'Tum secimleri kaydet',
-            onPressed: () {
-              _showSaveConfirmationDialog();
-            },
-          ),
-        ],
+      appBar: CustomAppBar(
+        title: 'Anketler',
+        showInfoButton: true,
+        onInfoPressed: _showInfoDialog,
+        showSaveButton: true,
+        onSavePressed: () {
+          _showSaveConfirmationDialog();
+        },
       ),
       drawer: CustomDrawer(),
       body: isLoading 

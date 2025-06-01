@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/custom_drawer.dart';
+import '../widgets/custom_app_bar.dart';
 import '../services/firebase_service.dart';
 import '../services/survey_service.dart';
 
@@ -95,19 +96,12 @@ class StatisticsPageState extends State<StatisticsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Color(0xFF5181BE),
-        title: Text('İstatistikler'),
-        actions: [
-          // Yenile butonu
-          IconButton(
-            icon: Icon(Icons.refresh),
-            tooltip: 'Verileri Yenile',
-            onPressed: () {
-              _loadSurveys();
-            },
-          ),
-        ],
+      appBar: CustomAppBar(
+        title: 'Istatistikler',
+        showInfoButton: true,
+        onInfoPressed: () {
+          _showInfoDialog(context);
+        },
       ),
       drawer: CustomDrawer(),
       body: isLoading 
@@ -317,5 +311,9 @@ class StatisticsPageState extends State<StatisticsPage> {
     
     // Varsayılan renk
     return Colors.blue;
+  }
+
+  void _showInfoDialog(BuildContext context) {
+    // Implement the logic to show the info dialog
   }
 }

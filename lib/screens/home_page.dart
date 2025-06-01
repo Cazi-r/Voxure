@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/custom_drawer.dart';
+import '../widgets/custom_app_bar.dart';
 import '../services/firebase_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -119,9 +120,8 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Color(0xFF5181BE),
-        title: Text("Ana Sayfa"),
+      appBar: CustomAppBar(
+        title: 'Ana Sayfa',
       ),
       drawer: CustomDrawer(),
       body: _isLoading

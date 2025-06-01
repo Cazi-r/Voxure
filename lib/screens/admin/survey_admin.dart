@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/survey_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../widgets/custom_app_bar.dart';
 
 class SurveyAdminPage extends StatefulWidget {
   @override
@@ -42,10 +43,14 @@ class _SurveyAdminPageState extends State<SurveyAdminPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Anket Yönetimi'),
-        backgroundColor: Colors.purple,
+      appBar: CustomAppBar(
+        title: 'Anket Yonetimi',
         actions: [
+          IconButton(
+            icon: Icon(Icons.refresh),
+            onPressed: _loadSurveys,
+            tooltip: 'Anketleri Yenile',
+          ),
         ],
       ),
       body: _isLoading
@@ -403,9 +408,10 @@ class _SurveyFormPageState extends State<SurveyFormPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.survey != null ? 'Anketi Düzenle' : 'Yeni Anket'),
-        backgroundColor: Colors.purple,
+      appBar: CustomAppBar(
+        title: widget.survey != null ? 'Anketi Duzenle' : 'Yeni Anket',
+        showSaveButton: true,
+        onSavePressed: _saveSurvey,
       ),
       body: Form(
         key: _formKey,

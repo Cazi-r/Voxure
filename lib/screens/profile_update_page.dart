@@ -3,6 +3,7 @@ import '../services/firebase_service.dart';
 import '../widgets/custom_drawer.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../widgets/custom_app_bar.dart';
 
 class ProfileUpdatePage extends StatefulWidget {
   @override
@@ -295,19 +296,10 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Color(0xFF5181BE),
-        title: Text("Profil Bilgilerini Güncelle"),
-        actions: [
-          // Bilgi ikonu
-          IconButton(
-            icon: Icon(Icons.info_outline, color: Colors.black54),
-            onPressed: () {
-              // Bilgi popup'ını göster
-              _showInfoDialog(context);
-            },
-          ),
-        ],
+      appBar: CustomAppBar(
+        title: 'Profil Guncelle',
+        showSaveButton: true,
+        onSavePressed: _saveProfile,
       ),
       drawer: CustomDrawer(),
       body: Stack(
