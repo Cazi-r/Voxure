@@ -105,15 +105,33 @@ class SurveyPageState extends State<SurveyPage> {
       List<Map<String, dynamic>> loadedSurveys = await _surveyService.getSurveys();
       
       // Anketleri yükle ve kullanıcı verilerine göre filtrele
-      setState(() {
-        surveys = loadedSurveys.map((survey) {
-          // Her ankete eksik olan kullanıcı bilgilerini ekle
-          return {
+      List<Map<String, dynamic>> updatedSurveys = [];
+      
+      for (var survey in loadedSurveys) {
+        // Kullanicinin bu ankete daha once oy verip vermedigini kontrol et
+        bool hasVoted = await _hasUserVoted(survey['id']);
+        
+        if (hasVoted) {
+          // Kullanicinin onceki oyunu getir
+          var userVote = await _firebaseService.getUserVote(userId!, survey['id']);
+          
+          updatedSurveys.add({
+            ...survey,
+            'oyVerildi': true,
+            'kilitlendi': true,
+            'secilenSecenek': userVote?['optionIndex'],
+          });
+        } else {
+          updatedSurveys.add({
             ...survey,
             'oyVerildi': false,
             'secilenSecenek': null,
-          };
-        }).toList();
+          });
+        }
+      }
+      
+      setState(() {
+        surveys = updatedSurveys;
       });
     } catch (e) {
       print('Anketleri yüklerken hata: $e');
