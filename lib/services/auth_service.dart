@@ -63,23 +63,64 @@ class AuthService {
       if (kIsWeb) {
         // Web platformu için
         final GithubAuthProvider githubProvider = GithubAuthProvider();
-        await _auth.signInWithRedirect(githubProvider);
-        return await _auth.getRedirectResult();
+        
+        // Popup ile giriş yap
+        try {
+          final userCredential = await _auth.signInWithPopup(githubProvider);
+          if (userCredential.user != null) {
+            print('GitHub giris basarili: ${userCredential.user?.email}');
+            return userCredential;
+          } else {
+            print('GitHub giris basarisiz: Kullanici bilgisi alinamadi');
+            return null;
+          }
+        } catch (e) {
+          print('GitHub popup hatasi: $e');
+          // Popup başarısız olursa redirect dene
+          await _auth.signInWithRedirect(githubProvider);
+          final result = await _auth.getRedirectResult();
+          print('GitHub redirect sonrasi giris basarili: ${result.user?.email}');
+          return result;
+        }
       } else {
         // Mobil platformlar için
-        final GithubAuthProvider githubProvider = GithubAuthProvider();
-        final result = await _auth.signInWithProvider(githubProvider);
+        final githubProvider = GithubAuthProvider();
         
-        if (result.user != null) {
-          print('GitHub giris basarili: ${result.user?.email}');
-          return result;
-        } else {
-          print('GitHub giris basarisiz: Kullanici bilgisi alinamadi');
-          return null;
+        // Scopes ekle
+        githubProvider.addScope('read:user');
+        githubProvider.addScope('user:email');
+        
+        // Custom parameters ekle
+        githubProvider.setCustomParameters({
+          'allow_signup': 'true',
+        });
+        
+        try {
+          // SignInWithAuthProvider kullan (CustomTabs açar)
+          final result = await _auth.signInWithProvider(githubProvider);
+          if (result.user != null) {
+            print('GitHub giris basarili: ${result.user?.email}');
+            return result;
+          } else {
+            print('GitHub giris basarisiz: Kullanici bilgisi alinamadi');
+            return null;
+          }
+        } catch (e) {
+          print('GitHub provider hatasi: $e');
+          // Alternatif yöntem dene
+          try {
+            final credential = await _auth.signInWithProvider(GithubAuthProvider());
+            print('GitHub alternatif giris basarili: ${credential.user?.email}');
+            return credential;
+          } catch (e2) {
+            print('GitHub alternatif giris hatasi: $e2');
+            return null;
+          }
         }
       }
     } on FirebaseAuthException catch (e) {
       print('GitHub giris hatasi (FirebaseAuthException): ${e.message}');
+      print('Hata kodu: ${e.code}');
       return null;
     } catch (e) {
       print('GitHub giris hatasi: $e');
