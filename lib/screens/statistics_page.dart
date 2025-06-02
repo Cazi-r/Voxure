@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../widgets/custom_drawer.dart';
 import '../widgets/custom_app_bar.dart';
-import '../services/firebase_service.dart';
-import '../services/survey_service.dart';
+import '../services/supabase_service.dart';
 import '../widgets/base_page.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// StatisticsPage: Anketlerin oy istatistiklerini gösteren sayfa.
 ///
@@ -16,8 +16,7 @@ class StatisticsPage extends StatefulWidget {
 
 class StatisticsPageState extends State<StatisticsPage> {
   // Servisler
-  final FirebaseService _firebaseService = FirebaseService();
-  final SurveyService _surveyService = SurveyService();
+  final SupabaseService _supabaseService = SupabaseService(Supabase.instance.client);
   
   // Veriler yükleniyor mu?
   bool isLoading = true;
@@ -31,44 +30,43 @@ class StatisticsPageState extends State<StatisticsPage> {
     _loadSurveys();
   }
 
-  /// Firestore'dan anketleri yükler ve sonra oyları alır
+  /// Anketleri yükler ve sonra oyları alır
   Future<void> _loadSurveys() async {
     setState(() {
       isLoading = true;
     });
 
     try {
-      // Firestore'dan anketleri yükle
-      List<Map<String, dynamic>> loadedSurveys = await _surveyService.getSurveys();
+      // Supabase'den anketleri yukle
+      List<Map<String, dynamic>> loadedSurveys = await _supabaseService.getSurveys();
       
       setState(() {
         surveys = loadedSurveys;
       });
       
-      // Firebase'den oy verilerini yükle
-      await loadDataFromFirebase();
+      // Oy verilerini yükle
+      await loadVoteData();
     } catch (e) {
-      print('Anketleri yuklerken hata: $e');
+      print('Anketleri yükleken hata: $e');
       setState(() {
         isLoading = false;
       });
     }
   }
 
-  /// Firebase'den oy verilerini yükler
-  Future<void> loadDataFromFirebase() async {
+  /// Oy verilerini yükle
+  Future<void> loadVoteData() async {
     try {
-      // Her anket için ayrı ayrı Firebase'den verileri al
       for (int i = 0; i < surveys.length; i++) {
         String surveyId = surveys[i]['id'];
         
         // Bu anket için oy verilerini al
-        Map<int, int> voteData = await _firebaseService.getSurveyVotes(surveyId);
+        Map<int, int> voteData = await _supabaseService.getSurveyVotes(surveyId);
         
         // Oy sayılarını sıfırla
         List<int> newVotes = List<int>.filled(surveys[i]['secenekler'].length, 0);
         
-        // Firebase'den gelen oy verilerini işle
+        // Oy verilerini işle
         voteData.forEach((optionIndex, count) {
           if (optionIndex >= 0 && optionIndex < newVotes.length) {
             newVotes[optionIndex] = count;
@@ -81,9 +79,11 @@ class StatisticsPageState extends State<StatisticsPage> {
             surveys[i]['oylar'] = newVotes;
           });
         }
+
+        print('Anket $surveyId icin islenen oylar: $newVotes');
       }
     } catch (e) {
-      print('Firebase verileri yuklenirken hata: $e');
+      print('Oy verileri yükleirken hata: $e');
       // Hata durumunda sessizce devam et
     } finally {
       if (mounted) {
@@ -168,6 +168,8 @@ class StatisticsPageState extends State<StatisticsPage> {
     for (int vote in votes) {
       totalVotes += vote;
     }
+
+    print('Anket ${survey['id']} icin gelen oylar: ${survey['oylar']}');
 
     return Card(
       margin: EdgeInsets.only(bottom: 16),

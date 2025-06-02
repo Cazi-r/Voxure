@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import '../widgets/custom_drawer.dart';
 import '../widgets/custom_app_bar.dart';
-import '../services/firebase_service.dart';
-import '../services/survey_service.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/supabase_service.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import '../widgets/base_page.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// SurveyPage: Kullanıcının anketlere oy verebildiği sayfa.
 ///
 /// Bu sayfa kullanıcı profiline göre filtrelenmiş anketleri gösterir
-/// ve kullanıcının oy vermesini sağlar. Oylar blockchain servisine kaydedilir.
+/// ve kullanıcının oy vermesini sağlar. Oylar Supabase'e kaydedilir.
 class SurveyPage extends StatefulWidget {
   @override
   State<SurveyPage> createState() => SurveyPageState();
@@ -18,8 +18,8 @@ class SurveyPage extends StatefulWidget {
 
 class SurveyPageState extends State<SurveyPage> {
   // Servisler
-  final FirebaseService _firebaseService = FirebaseService();
-  final SurveyService _surveyService = SurveyService();
+  final SupabaseService _supabaseService = SupabaseService(Supabase.instance.client);
+
   
   // Kullanıcı bilgileri
   String? userId;
@@ -45,53 +45,44 @@ class SurveyPageState extends State<SurveyPage> {
 
     try {
       // Mevcut kullanıcı bilgilerini al
-      User? currentUser = FirebaseAuth.instance.currentUser;
+      firebase_auth.User? currentUser = firebase_auth.FirebaseAuth.instance.currentUser;
       
       if (currentUser != null) {
         userId = currentUser.uid;
-        
-        // Kullanıcı profil bilgilerini Firestore'dan al
-        DocumentSnapshot userDoc = await FirebaseFirestore.instance
+
+        // Firestore'dan kullanici bilgilerini cek
+        final userDoc = await FirebaseFirestore.instance
             .collection('users')
-            .doc(userId)
+            .doc(currentUser.uid)
             .get();
 
         if (userDoc.exists) {
-          Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
-          
-          setState(() {
-            userCity = userData['city'];
-            userSchool = userData['school'];
-          });
-          
-          // Doğum tarihini al ve yaşı hesapla
-          Timestamp? birthDateTimestamp = userData['birthDate'] as Timestamp?;
-          
-          if (birthDateTimestamp != null) {
-            DateTime birthDate = birthDateTimestamp.toDate();
-            DateTime now = DateTime.now();
-            int age = now.year - birthDate.year;
-            
-            // Doğum günü bu yıl henüz geçmediyse yaşından 1 çıkar
-            if (now.month < birthDate.month || 
-                (now.month == birthDate.month && now.day < birthDate.day)) {
-              age--;
-            }
-            
-            setState(() {
-              userAge = age;
-            });
-          } else {
-            // Varsayılan yaş
-            setState(() {
-              userAge = 18;
-            });
+          final data = userDoc.data()!;
+          // birthDate alanindan yas hesapla
+          DateTime? birthDate;
+          if (data['birthDate'] != null) {
+            birthDate = (data['birthDate'] as Timestamp).toDate();
           }
+          int? calculatedAge;
+          if (birthDate != null) {
+            final now = DateTime.now();
+            calculatedAge = now.year - birthDate.year;
+            if (now.month < birthDate.month || (now.month == birthDate.month && now.day < birthDate.day)) {
+              calculatedAge--;
+            }
+          }
+          setState(() {
+            userAge = calculatedAge;
+            userCity = data['city'];
+            userSchool = data['school'];
+          });
         }
-        
-        // Anketleri Firestore'dan yükle
+
+        // Anketleri yükle
         await _loadSurveys();
       }
+
+      print("Kullanici Firestore verisi: age=$userAge, city=$userCity, school=$userSchool");
     } catch (e) {
       print('Kullanici bilgileri yuklenirken hata: $e');
     } finally {
@@ -101,10 +92,10 @@ class SurveyPageState extends State<SurveyPage> {
     }
   }
   
-  /// Firestore'dan anketleri yükler
+  /// Supabase'den anketleri yükler
   Future<void> _loadSurveys() async {
     try {
-      List<Map<String, dynamic>> loadedSurveys = await _surveyService.getSurveys();
+      List<Map<String, dynamic>> loadedSurveys = await _supabaseService.getSurveys();
       
       // Anketleri yükle ve kullanıcı verilerine göre filtrele
       List<Map<String, dynamic>> updatedSurveys = [];
@@ -115,7 +106,7 @@ class SurveyPageState extends State<SurveyPage> {
         
         if (hasVoted) {
           // Kullanicinin onceki oyunu getir
-          var userVote = await _firebaseService.getUserVote(userId!, survey['id']);
+          var userVote = await _supabaseService.getUserVote(userId!, survey['id']);
           
           updatedSurveys.add({
             ...survey,
@@ -136,7 +127,7 @@ class SurveyPageState extends State<SurveyPage> {
         surveys = updatedSurveys;
       });
     } catch (e) {
-      print('Anketleri yüklerken hata: $e');
+      print('Anketleri yuklerken hata: $e');
     }
   }
   
@@ -145,7 +136,7 @@ class SurveyPageState extends State<SurveyPage> {
     if (userId == null) return false;
     
     try {
-      final userVote = await _firebaseService.getUserVote(userId!, surveyId);
+      final userVote = await _supabaseService.getUserVote(userId!, surveyId);
       return userVote != null;
     } catch (e) {
       print('Oy kontrolu sirasinda hata: $e');
@@ -157,31 +148,24 @@ class SurveyPageState extends State<SurveyPage> {
   void vote(int surveyIndex, int optionIndex) async {
     if (userId == null) return;
     
-    // Anket kilitlenmişse işlemi engelle
-    if (surveys[surveyIndex]['kilitlendi'] == true) {
+    final survey = surveys[surveyIndex];
+    
+    // Anket kilitli ise veya daha once oy verilmisse islemi iptal et
+    if (survey['kilitlendi'] == true || survey['oyVerildi'] == true) {
       return;
     }
     
     setState(() {
-      // Kullanici daha once oy verdiyse onceki oyu geri al
-      if (surveys[surveyIndex]['oyVerildi'] == true) {
-        int oncekiSecenek = surveys[surveyIndex]['secilenSecenek'];
-        surveys[surveyIndex]['oylar'][oncekiSecenek]--;
-      }
+      // Secimi guncelle
+      survey['oyVerildi'] = true;
+      survey['secilenSecenek'] = optionIndex;
       
-      // Seçilen seçeneğin oy sayısını artır
-      surveys[surveyIndex]['oylar'][optionIndex]++;
-      surveys[surveyIndex]['oyVerildi'] = true;
-      surveys[surveyIndex]['secilenSecenek'] = optionIndex;
+      // Oy sayisini artir
+      if (survey['oylar'] == null) {
+        survey['oylar'] = List<int>.filled(survey['secenekler'].length, 0);
+      }
+      survey['oylar'][optionIndex]++;
     });
-    
-    // Oy verilerini blockchain icin hazirla
-    final Map<String, dynamic> voteData = {
-      'userId': userId,
-      'surveyId': surveys[surveyIndex]['id'],
-      'optionIndex': optionIndex,
-      'timestamp': DateTime.now().millisecondsSinceEpoch,
-    };
   }
 
   /// Anketin kullanıcıya gösterilip gösterilmeyeceğini kontrol eder
@@ -454,7 +438,7 @@ class SurveyPageState extends State<SurveyPage> {
     );
   }
 
-  /// Tüm oyları Firebase'e kaydeder
+  /// Tüm oyları Supabase'e kaydeder
   void _saveAllVotes() async {
     if (userId == null) return;
     
@@ -489,8 +473,8 @@ class SurveyPageState extends State<SurveyPage> {
     );
     
     try {
-      // Oyları Firebase'e kaydet
-      final success = await _firebaseService.saveBulkVotes(votesToSave);
+      // Oyları Supabase'e kaydet
+      final success = await _supabaseService.saveBulkVotes(votesToSave);
       
       // Progress indicator'ı kapat
       Navigator.of(context).pop();
