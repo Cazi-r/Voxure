@@ -3,6 +3,8 @@ import '../services/firebase_service.dart';
 import 'package:flutter/services.dart';
 import '../widgets/custom_app_bar.dart';
 import '../widgets/base_page.dart';
+import '../services/supabase_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RegisterPage extends StatefulWidget {
   @override
@@ -11,6 +13,8 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
   final FirebaseService _firebaseService = FirebaseService();
+  final SupabaseService _supabaseService = SupabaseService(Supabase.instance.client);
+  String? _logoUrl;
   
   final emailController = TextEditingController();
   final sifreController = TextEditingController();
@@ -20,11 +24,34 @@ class _RegisterPageState extends State<RegisterPage> {
   String _loadingMessage = "Kayıt olunuyor...";
 
   @override
+  void initState() {
+    super.initState();
+    _loadLogo();
+  }
+
+  Future<void> _loadLogo() async {
+    try {
+      final logoUrl = await _supabaseService.getAppLogo();
+      if (mounted) {
+        setState(() {
+          _logoUrl = logoUrl;
+        });
+      }
+    } catch (e) {
+      print('Logo yuklenirken hata: $e');
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return BasePage(
       title: 'Kayit Ol',
       showDrawer: false,
       content: _buildContent(),
+      leading: IconButton(
+        icon: Icon(Icons.arrow_back),
+        onPressed: () => Navigator.pushReplacementNamed(context, '/'),
+      ),
     );
   }
 
@@ -39,14 +66,50 @@ class _RegisterPageState extends State<RegisterPage> {
               Center(
                 child: Column(
                   children: [
-                    Image.asset(
-                      'images/icon.png',
-                      height: 100,
-                      width: 100,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Icon(Icons.image, size: 100, color: Color(0xFF5181BE));
-                      },
-                    ),
+                    if (_logoUrl != null)
+                      Image.network(
+                        _logoUrl!,
+                        height: 100,
+                        width: 100,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          print('Logo yukleme hatasi: $error');
+                          return Container(
+                            height: 100,
+                            width: 100,
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade50,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(Icons.image, size: 60, color: Color(0xFF5181BE)),
+                          );
+                        },
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            height: 100,
+                            width: 100,
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                color: Color(0xFF5181BE),
+                                value: loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                    : null,
+                              ),
+                            ),
+                          );
+                        },
+                      )
+                    else
+                      Container(
+                        height: 100,
+                        width: 100,
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(Icons.image, size: 60, color: Color(0xFF5181BE)),
+                      ),
                     SizedBox(height: 12),
                     Text(
                       'VOXURE - Kayıt Formu',

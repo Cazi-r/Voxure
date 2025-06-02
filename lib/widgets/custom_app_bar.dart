@@ -7,6 +7,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onInfoPressed;
   final bool showSaveButton;
   final VoidCallback? onSavePressed;
+  final Widget? leading;
 
   const CustomAppBar({
     Key? key,
@@ -16,6 +17,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.onInfoPressed,
     this.showSaveButton = false,
     this.onSavePressed,
+    this.leading,
   }) : super(key: key);
 
   @override
@@ -23,6 +25,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
       backgroundColor: Color(0xFF5181BE),
       title: Text(title),
+      leading: leading,
       actions: [
         if (showInfoButton)
           IconButton(

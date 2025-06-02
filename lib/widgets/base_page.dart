@@ -14,6 +14,7 @@ class BasePage extends StatelessWidget {
   final VoidCallback? onInfoPressed;
   final bool showRefreshButton;
   final VoidCallback? onRefreshPressed;
+  final Widget? leading;
 
   const BasePage({
     super.key,
@@ -28,6 +29,7 @@ class BasePage extends StatelessWidget {
     this.onInfoPressed,
     this.showRefreshButton = false,
     this.onRefreshPressed,
+    this.leading,
   });
 
   @override
@@ -40,6 +42,7 @@ class BasePage extends StatelessWidget {
         onSavePressed: onSavePressed,
         showInfoButton: showInfoButton,
         onInfoPressed: onInfoPressed,
+        leading: leading,
         actions: [
           if (showRefreshButton && onRefreshPressed != null)
             IconButton(
