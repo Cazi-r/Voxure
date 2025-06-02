@@ -2,11 +2,36 @@ import 'package:flutter/material.dart';
 import '../services/firebase_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/supabase_service.dart';
 
-class CustomDrawer extends StatelessWidget {
+class CustomDrawer extends StatefulWidget {
+  @override
+  State<CustomDrawer> createState() => _CustomDrawerState();
+}
+
+class _CustomDrawerState extends State<CustomDrawer> {
   final FirebaseService _firebaseService = FirebaseService();
+  final SupabaseService _supabaseService = SupabaseService(Supabase.instance.client);
+  String? _logoUrl;
 
-  CustomDrawer({super.key});
+  @override
+  void initState() {
+    super.initState();
+    _loadLogo();
+  }
+
+  Future<void> _loadLogo() async {
+    try {
+      final logoUrl = await _supabaseService.getAppLogo();
+      if (mounted) {
+        setState(() {
+          _logoUrl = logoUrl;
+        });
+      }
+    } catch (e) {
+      print('Logo yuklenirken hata: $e');
+    }
+  }
 
   void _navigate(BuildContext context, String route) {
     Navigator.pop(context);
@@ -82,15 +107,50 @@ class CustomDrawer extends StatelessWidget {
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
-          UserAccountsDrawerHeader(
-            decoration: BoxDecoration(
-              color: Color(0xFF5181BE),
-            ),
-            accountName: Text(''),
-            accountEmail: Text(userEmail ?? ''),
-            currentAccountPicture: CircleAvatar(
-              backgroundColor: Colors.white,
-              child: Icon(Icons.person, color: Color(0xFF5181BE), size: 50),
+          Container(
+            color: Color(0xFF5181BE),
+            child: Column(
+              children: [
+                SizedBox(height: 50), // Status bar icin bosluk
+                // Logo
+                if (_logoUrl != null)
+                  Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20),
+                    child: Image.network(
+                      _logoUrl!,
+                      height: 100,
+                      width: 100,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Icon(Icons.error_outline, size: 100, color: Colors.white);
+                      },
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return SizedBox(
+                          height: 100,
+                          width: 100,
+                          child: Center(
+                            child: CircularProgressIndicator(color: Colors.white),
+                          ),
+                        );
+                      },
+                    ),
+                  )
+                else
+                  Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20),
+                    child: Icon(Icons.account_circle, size: 100, color: Colors.white),
+                  ),
+                // Kullanici bilgileri
+                Padding(
+                  padding: EdgeInsets.only(bottom: 20),
+                  child: Text(
+                    userEmail ?? '',
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
             ),
           ),
           

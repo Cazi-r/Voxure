@@ -246,6 +246,7 @@ class _HomePageState extends State<HomePage> {
     String? email = currentUser?.email;
     
     return Container(
+      width: double.infinity,
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Color(0xFF5181BE).withOpacity(0.2),
@@ -258,48 +259,39 @@ class _HomePageState extends State<HomePage> {
           )
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Kullanici avatari
-          CircleAvatar(
-            backgroundColor: Color(0xFF5181BE),
-            child: Icon(Icons.person, color: Colors.white),
-          ),
-          SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Hosgeldin mesaji
-                Text(
-                  'Hosgeldiniz',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                // İsim ve soyisim gösterimi (eğer varsa)
-                if (userName != null && userName!.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2, bottom: 2),
-                    child: Text(
-                      '${userName} ${userSurname ?? ""}',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ),
-                // E-posta gosterimi
-                Text(
-                  email ?? "",
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[700],
-                  ),
-                ),
-              ],
+          // Hosgeldin mesaji
+          Text(
+            'Hosgeldiniz',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
             ),
+            textAlign: TextAlign.center,
+          ),
+          // İsim ve soyisim gösterimi (eğer varsa)
+          if (userName != null && userName!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 2, bottom: 2),
+              child: Text(
+                '${userName} ${userSurname ?? ""}',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[600],
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          // E-posta gosterimi
+          Text(
+            email ?? "",
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[700],
+            ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),

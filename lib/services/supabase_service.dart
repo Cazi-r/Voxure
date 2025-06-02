@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:io';
 
 class SupabaseService {
   final SupabaseClient _supabase;
@@ -185,6 +186,84 @@ class SupabaseService {
     } catch (e) {
       print('Anketi silerken hata: $e');
       return false;
+    }
+  }
+
+  // Logo yukleme
+  Future<String?> uploadLogo(String filePath, String fileName) async {
+    try {
+      final bytes = await File(filePath).readAsBytes();
+      
+      await _supabase
+          .storage
+          .from('logos')  // 'logos' bucket'ina yukle
+          .uploadBinary(
+            fileName,
+            bytes,
+            fileOptions: const FileOptions(
+              cacheControl: '3600',
+              upsert: true,
+            ),
+          );
+      
+      // Logo URL'ini dondur
+      final String publicUrl = _supabase
+          .storage
+          .from('logos')
+          .getPublicUrl(fileName);
+          
+      return publicUrl;
+    } catch (e) {
+      print('Logo yuklenirken hata: $e');
+      return null;
+    }
+  }
+
+  // Logo silme
+  Future<bool> deleteLogo(String fileName) async {
+    try {
+      await _supabase
+          .storage
+          .from('logos')
+          .remove([fileName]);
+          
+      return true;
+    } catch (e) {
+      print('Logo silinirken hata: $e');
+      return false;
+    }
+  }
+
+  // Logo URL'ini getir
+  String? getLogoUrl(String fileName) {
+    try {
+      return _supabase
+          .storage
+          .from('logos')
+          .getPublicUrl(fileName);
+    } catch (e) {
+      print('Logo URL alinirken hata: $e');
+      return null;
+    }
+  }
+
+  // Uygulama logosunu getir
+  Future<String?> getAppLogo() async {
+    try {
+      // 'app_settings' tablosundan logo URL'ini al
+      final response = await _supabase
+          .from('app_settings')
+          .select('logo_url')
+          .single();
+      
+      if (response != null && response['logo_url'] != null) {
+        return response['logo_url'];
+      }
+      
+      return null;
+    } catch (e) {
+      print('Uygulama logosu alinirken hata: $e');
+      return null;
     }
   }
 } 

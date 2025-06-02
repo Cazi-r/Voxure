@@ -5,6 +5,8 @@ import '../services/auth_service.dart';
 import 'package:flutter/services.dart';
 import '../widgets/custom_app_bar.dart';
 import '../widgets/base_page.dart';
+import '../services/supabase_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -15,6 +17,7 @@ class _LoginPageState extends State<LoginPage> {
   // Firebase servisi
   final FirebaseService _firebaseService = FirebaseService();
   final AuthService _authService = AuthService();
+  final SupabaseService _supabaseService = SupabaseService(Supabase.instance.client);
   
   // Text controller'lar
   final emailController = TextEditingController();
@@ -22,6 +25,26 @@ class _LoginPageState extends State<LoginPage> {
   
   // Loading durumu
   bool _isLoading = false;
+  String? _logoUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLogo();
+  }
+
+  Future<void> _loadLogo() async {
+    try {
+      final logoUrl = await _supabaseService.getAppLogo();
+      if (mounted) {
+        setState(() {
+          _logoUrl = logoUrl;
+        });
+      }
+    } catch (e) {
+      print('Logo yuklenirken hata: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,20 +65,33 @@ class _LoginPageState extends State<LoginPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Uygulama logosu
-                  Image.asset(
-                    'images/icon.png',
-                    height: 140,
-                    width: 140,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Icon(Icons.image, size: 140, color: Color(0xFF5181BE));
-                    },
-                  ),
-                  SizedBox(height: 16),
+                  // Logo
+                  if (_logoUrl != null)
+                    Padding(
+                      padding: EdgeInsets.only(bottom: 32),
+                      child: Image.network(
+                        _logoUrl!,
+                        height: 120,
+                        width: 120,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Icon(Icons.error_outline, size: 120, color: Colors.red);
+                        },
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return CircularProgressIndicator();
+                        },
+                      ),
+                    )
+                  else
+                    Padding(
+                      padding: EdgeInsets.only(bottom: 32),
+                      child: Icon(Icons.account_circle, size: 120, color: Color(0xFF5181BE)),
+                    ),
                   
                   // Uygulama başlığı
                   Text(
-                    'VOXURE',
+                    'Vote App',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,

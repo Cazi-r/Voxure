@@ -45,8 +45,6 @@ dependencies:
   flutter_localizations:
     sdk: flutter
     
-  intl: 0.20.2
-
   # UI paketleri
   cupertino_icons: ^1.0.2
   flutter_svg: ^2.0.10+1
