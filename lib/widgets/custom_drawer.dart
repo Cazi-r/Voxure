@@ -56,8 +56,8 @@ class CustomDrawer extends StatelessWidget {
     }
     
     // Admin UID kontrolu
-    const String adminUserId = "Nq5liKh9UrS7HkqIYQAa6CBY62p1";
-    bool isAdmin = (userId == adminUserId || userId == "tOZOxKBk8CUWk7S1tAdONnOdxS92");
+    const String adminUserId = "yWt0hnQif1ONGEpcAo8yPCitLQm1";
+    bool isAdmin = (userId == adminUserId);
 
     return Drawer(
       child: ListView(

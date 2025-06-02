@@ -83,12 +83,8 @@ class MyApp extends StatelessWidget {
         '/statistics': (context) => StatisticsPage(),
         '/profile_update': (context) => ProfileUpdatePage(),
         '/admin/survey': (context) => SurveyAdminPage(),
+        '/register': (context) => RegisterPage(),
       },
     );
   }
 }
-
-/*
-Basit bir oy verme işlemi Ethereum ana ağında şu an için yaklaşık ₺1.75 – ₺5.00 arasında bir maliyete yol açar.
- Bu fiyat ağın yoğunluğuna ve fonksiyonun karmaşıklığına göre değişebilir.
-*/
