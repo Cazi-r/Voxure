@@ -122,21 +122,21 @@ Firebase Authentication'da kayitli kullanicilar asagidaki gibidir:
 
 1. Kullanici 1
    * E-posta: admin@example.com
-   * Olusturulma Tarihi: 3 Haziran 2025
-   * Son Giris Tarihi: 3 Nisan 2025
+   * Olusturulma Tarihi: 2 Haziran 2025
+   * Son Giris Tarihi: 2 Nisan 2025
    * User UID: RSoZIw4KBRRbVmcwMfYvzSzNtqA2
 
 2. Kullanici 2
-   * E-posta: test@gmail.com
-   * Olusturulma Tarihi: Apr 7, 2025
-   * Son Giris Tarihi: Apr 7, 2025
-   * User UID: 69ULJ65ikVDpQ7y5RqhivPosqV2
+   * E-posta: test1@example.com
+   * Olusturulma Tarihi: 2 Haziran 2025
+   * Son Giris Tarihi: 2 Haziran 2025
+   * User UID: rMHapTjfiGRwubxvJja5B5ta88D3
 
 3. Kullanici 3
-   * E-posta: test2@gmail.com
-   * Olusturulma Tarihi: Apr 7, 2025
-   * Son Giris Tarihi: Apr 7, 2025
-   * User UID: ZnZkWmHuEz40UMbvSxXmJA0JVJ3
+   * E-posta: test2@example.com
+   * Olusturulma Tarihi: 2 Haziran 2025
+   * Son Giris Tarihi: 2 Haziran 2025
+   * User UID: sNBwQ2ulJSQDqff6TarJNcBpRSm1
 
 ## Firebase Yapilandirmasi
 
