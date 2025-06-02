@@ -25,7 +25,6 @@ Bu projenin temel amaci, kullanicilarin demografik verilerine gore uygun anketle
 
 * Flutter
 * Firebase (Authentication, Firestore)
-* Provider (State Management)
 * Shared Preferences (Yerel Veri Depolama)
 * Supabase (Veritabani ve Kimlik Dogrulama)
 * SQLite (Yerel Veritabani)
