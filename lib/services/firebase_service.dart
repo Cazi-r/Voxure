@@ -32,26 +32,60 @@ class FirebaseService {
         };
       }
       
-      // Kullanıcı oluştur
       try {
-        UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+        // Kullanıcı oluştur
+        final UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
           email: email,
           password: sifre,
         );
-        
+
+        // Kullanıcı başarıyla oluşturuldu mu kontrol et
+        final User? user = userCredential.user;
+        if (user == null) {
+          return {
+            'success': false,
+            'message': 'Kullanici olusturulamadi.',
+          };
+        }
+
+        // Kullanıcı oturum açmış durumda, başarılı dön
         return {
           'success': true,
           'message': 'Kullanici basariyla kaydedildi.',
-          'userId': userCredential.user!.uid
+          'userId': user.uid,
         };
+
       } on FirebaseAuthException catch (e) {
-        // Bu kullanıcı zaten kayıtlı mı kontrol et
+        // Firebase Auth hataları
         if (e.code == 'email-already-in-use') {
-          return {
-            'success': false,
-            'message': 'Bu e-posta adresi zaten kayitli.',
-            'error': e.toString()
-          };
+          // Kullanıcı zaten varsa, giriş yapmayı dene
+          try {
+            final UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+              email: email,
+              password: sifre,
+            );
+
+            final User? user = userCredential.user;
+            if (user == null) {
+              return {
+                'success': false,
+                'message': 'Giris yapilamadi.',
+              };
+            }
+            
+            return {
+              'success': true,
+              'message': 'Bu e-posta zaten kayıtlı, giriş yapıldı.',
+              'userId': user.uid,
+            };
+          } catch (loginError) {
+            print('Giris sirasinda hata: $loginError');
+            return {
+              'success': false,
+              'message': 'Bu e-posta kayıtlı ancak giriş yapılamadı.',
+              'error': loginError.toString()
+            };
+          }
         }
         
         String message = 'Kayit sirasinda bir hata olustu.';
@@ -62,13 +96,27 @@ class FirebaseService {
           message = 'Gecersiz bir e-posta formati.';
         }
         
+        print('Firebase Auth hatasi: ${e.code} - ${e.message}');
         return {
           'success': false,
           'message': message,
           'error': e.toString()
         };
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('Kayit islemi sirasinda beklenmeyen hata: $e');
+      print('Stack trace: $stackTrace');
+      
+      // Kullanıcı başarıyla oluşturulmuş ama başka bir hata olduysa
+      final currentUser = _auth.currentUser;
+      if (currentUser != null) {
+        return {
+          'success': true,
+          'message': 'Kullanici olusturuldu ancak bazi bilgiler eksik olabilir.',
+          'userId': currentUser.uid,
+        };
+      }
+      
       return {
         'success': false,
         'message': 'Beklenmeyen bir hata olustu.',

@@ -255,6 +255,9 @@ class _RegisterPageState extends State<RegisterPage> {
   }
   
   void _registerUser() async {
+    // Klavyeyi kapat
+    FocusScope.of(context).unfocus();
+
     if (!_isValidEmail(emailController.text)) {
       _showMessage("Hata", "Geçerli bir e-posta adresi giriniz.");
       return;
@@ -281,60 +284,101 @@ class _RegisterPageState extends State<RegisterPage> {
     });
     
     try {
+      print('Kayit islemi baslatiliyor...');
+      print('Email: ${emailController.text}');
+      
       Map<String, dynamic> result = await _firebaseService.registerUser(
         email: emailController.text,
         sifre: sifreController.text,
       );
+      
+      print('Firebase kayit sonucu: $result');
       
       setState(() {
         _isLoading = false;
       });
       
       if (result['success']) {
-        _showMessage(
-          "Kayıt Başarılı", 
-          "Hesabınız başarıyla oluşturuldu.",
-          onDismissed: () {
-            Navigator.pushReplacementNamed(context, '/home');
-          }
-        );
+        print('Kayit basarili, ana sayfaya yonlendiriliyor...');
+        if (mounted) {
+          // Klavyeyi tekrar kapat (emin olmak icin)
+          FocusScope.of(context).unfocus();
+          await Future.delayed(Duration(milliseconds: 100)); // Klavyenin kapanmasi icin kisa sure bekle
+          
+          Navigator.pushReplacementNamed(context, '/home');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Kayıt başarılı! Hoş geldiniz.'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
       } else {
         String errorMessage = result['message'] ?? "Bilinmeyen hata";
+        print('Kayit hatasi: $errorMessage');
         
         if (errorMessage.contains('zaten kayıtlı, giriş yapıldı')) {
-          _showMessage(
-            "Dikkat", 
-            errorMessage,
-            onDismissed: () {
-              Navigator.pushReplacementNamed(context, '/home');
-            }
-          );
+          print('Kullanici zaten kayitli, giris yapiliyor...');
+          if (mounted) {
+            // Klavyeyi tekrar kapat (emin olmak icin)
+            FocusScope.of(context).unfocus();
+            await Future.delayed(Duration(milliseconds: 100)); // Klavyenin kapanmasi icin kisa sure bekle
+            
+            Navigator.pushReplacementNamed(context, '/home');
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Hesabınız zaten var. Giriş yapıldı.'),
+                backgroundColor: Colors.blue,
+              ),
+            );
+          }
         } else {
           _showMessage("Kayıt Hatası", errorMessage);
         }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('====== KAYIT HATASI DETAYI ======');
+      print('Hata: $e');
+      print('Stack Trace: $stackTrace');
+      print('Kullanici girisi kontrol ediliyor...');
+      print('Kullanici giris durumu: ${_firebaseService.isUserLoggedIn()}');
+      print('================================');
+      
       setState(() {
         _isLoading = false;
       });
       
       if (_firebaseService.isUserLoggedIn()) {
-        _showMessage(
-          "Kayıt Başarılı", 
-          "Hesabınız oluşturuldu.",
-          onDismissed: () {
-            Navigator.pushReplacementNamed(context, '/home');
-          }
-        );
+        print('Kullanici giris yapmis durumda, ana sayfaya yonlendiriliyor...');
+        if (mounted) {
+          // Klavyeyi tekrar kapat (emin olmak icin)
+          FocusScope.of(context).unfocus();
+          await Future.delayed(Duration(milliseconds: 100)); // Klavyenin kapanmasi icin kisa sure bekle
+          
+          Navigator.pushReplacementNamed(context, '/home');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Kayıt başarılı! Hoş geldiniz.'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
       } else {
-        _showMessage("Beklenmeyen Hata", "Kayıt sırasında bir hata oluştu. Lütfen tekrar deneyin.");
+        print('Kullanici giris yapamamis, hata gosteriliyor...');
+        _showMessage(
+          "Beklenmeyen Hata", 
+          "Kayıt sırasında bir hata oluştu. Hata detayı: $e"
+        );
       }
     }
   }
   
   void _showMessage(String title, String message, {Function? onDismissed}) {
+    if (!mounted) return;
+    
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) {
         return AlertDialog(
           title: Text(title),
