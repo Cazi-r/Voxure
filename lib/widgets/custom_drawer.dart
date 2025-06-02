@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/firebase_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CustomDrawer extends StatelessWidget {
   final FirebaseService _firebaseService = FirebaseService();
@@ -29,12 +30,30 @@ class CustomDrawer extends StatelessWidget {
             TextButton(
               child: const Text('Evet'),
               onPressed: () async {
-                Navigator.of(context).pop();
-                await _firebaseService.signOut();
-                Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Cikis yapildi')),
-                );
+                try {
+                  Navigator.of(context).pop();
+                  
+                  // Firebase'den cikis yap
+                  await _firebaseService.signOut();
+                  
+                  // Supabase'den cikis yap
+                  await Supabase.instance.client.auth.signOut();
+                  
+                  // Login sayfasina yonlendir
+                  if (context.mounted) {
+                    Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Cikis yapildi')),
+                    );
+                  }
+                } catch (e) {
+                  print('Cikis yaparken hata: $e');
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Cikis yaparken bir hata olustu')),
+                    );
+                  }
+                }
               },
             ),
           ],
