@@ -145,7 +145,33 @@ class AuthService {
 
   // Cikis yap
   Future<void> signOut() async {
-    await _googleSignIn.signOut();
-    await _auth.signOut();
+    try {
+      print('AuthService: Cikis islemi baslatiliyor...');
+      
+      print('AuthService: Google hesabindan cikis deneniyor...');
+      try {
+        await _googleSignIn.signOut();
+        print('AuthService: Google hesabindan cikis basarili');
+      } catch (e) {
+        print('AuthService: Google cikis hatasi: $e');
+        // Google cikis hatasi genel cikisi engellemeyecek
+      }
+
+      print('AuthService: Firebase cikisi deneniyor...');
+      try {
+        await _auth.signOut();
+        print('AuthService: Firebase cikisi basarili');
+      } catch (e) {
+        print('AuthService: Firebase cikis hatasi: $e');
+        throw Exception('Firebase cikis islemi basarisiz: $e');
+      }
+
+      print('AuthService: Tum cikis islemleri basariyla tamamlandi');
+    } catch (e, stackTrace) {
+      print('AuthService: Cikis sirasinda kritik hata:');
+      print('Hata: $e');
+      print('Stack Trace: $stackTrace');
+      throw Exception('Cikis islemi tamamlanamadi: $e');
+    }
   }
 } 

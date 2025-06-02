@@ -3,6 +3,7 @@ import '../services/firebase_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/supabase_service.dart';
+import '../services/auth_service.dart';
 
 class CustomDrawer extends StatefulWidget {
   @override
@@ -12,7 +13,9 @@ class CustomDrawer extends StatefulWidget {
 class _CustomDrawerState extends State<CustomDrawer> {
   final FirebaseService _firebaseService = FirebaseService();
   final SupabaseService _supabaseService = SupabaseService(Supabase.instance.client);
+  final AuthService _authService = AuthService();
   String? _logoUrl;
+  bool _isLoggingOut = false;
 
   @override
   void initState() {
@@ -40,48 +43,120 @@ class _CustomDrawerState extends State<CustomDrawer> {
     }
   }
 
+  Future<void> _handleLogout(BuildContext context) async {
+    print('CustomDrawer: Cikis islemi baslatiliyor...');
+    try {
+      setState(() {
+        _isLoggingOut = true;
+      });
+      print('CustomDrawer: Loading durumu aktif edildi');
+
+      print('CustomDrawer: AuthService.signOut() cagiriliyor...');
+      await _authService.signOut();
+      print('CustomDrawer: AuthService.signOut() basariyla tamamlandi');
+
+      print('CustomDrawer: Login sayfasina yonlendirme yapiliyor...');
+      if (!mounted) {
+        print('CustomDrawer: Widget artik mounted degil, islem iptal ediliyor');
+        return;
+      }
+
+      setState(() {
+        _isLoggingOut = false;
+      });
+      print('CustomDrawer: Loading durumu kapatildi');
+
+      await Future.delayed(Duration.zero, () {
+        Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+        print('CustomDrawer: Yonlendirme basarili');
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cikis yapildi'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        print('CustomDrawer: Basarili cikis bildirimi gosterildi');
+      });
+
+    } catch (e, stackTrace) {
+      print('CustomDrawer: Cikis sirasinda hata olustu:');
+      print('Hata: $e');
+      print('Stack Trace: $stackTrace');
+      
+      if (!mounted) {
+        print('CustomDrawer: Widget artik mounted degil, hata mesaji gosterilemeyecek');
+        return;
+      }
+
+      setState(() {
+        _isLoggingOut = false;
+      });
+      print('CustomDrawer: Hata sonrasi loading durumu kapatildi');
+      
+      String errorMessage = 'Cikis yaparken bir hata olustu';
+      if (e is Exception) {
+        errorMessage += ': ${e.toString().replaceAll('Exception: ', '')}';
+      }
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      print('CustomDrawer: Hata bildirimi gosterildi');
+    }
+  }
+
   void _logout(BuildContext context) {
+    print('CustomDrawer: Cikis dialog\'u gosteriliyor');
+    if (_isLoggingOut) {
+      print('CustomDrawer: Cikis islemi zaten devam ediyor, dialog gosterilmeyecek');
+      return;
+    }
+
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Cikis'),
-          content: const Text('Cikmak istediginize emin misiniz?'),
-          actions: [
-            TextButton(
-              child: const Text('Iptal'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            TextButton(
-              child: const Text('Evet'),
-              onPressed: () async {
-                try {
-                  Navigator.of(context).pop();
-                  
-                  // Firebase'den cikis yap
-                  await _firebaseService.signOut();
-                  
-                  // Supabase'den cikis yap
-                  await Supabase.instance.client.auth.signOut();
-                  
-                  // Login sayfasina yonlendir
-                  if (context.mounted) {
-                    Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Cikis yapildi')),
-                    );
-                  }
-                } catch (e) {
-                  print('Cikis yaparken hata: $e');
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Cikis yaparken bir hata olustu')),
-                    );
-                  }
-                }
-              },
-            ),
-          ],
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return WillPopScope(
+          onWillPop: () async => !_isLoggingOut,
+          child: AlertDialog(
+            title: const Text('Cikis'),
+            content: const Text('Cikmak istediginize emin misiniz?'),
+            actions: [
+              TextButton(
+                onPressed: _isLoggingOut 
+                  ? null 
+                  : () {
+                      print('CustomDrawer: Cikis dialog\'u iptal edildi');
+                      Navigator.of(dialogContext).pop();
+                    },
+                child: const Text('Iptal'),
+              ),
+              TextButton(
+                onPressed: _isLoggingOut
+                  ? null
+                  : () async {
+                      print('CustomDrawer: Cikis onayi verildi');
+                      Navigator.of(dialogContext).pop();
+                      await _handleLogout(context);
+                    },
+                child: _isLoggingOut
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
+                      ),
+                    )
+                  : const Text('Evet'),
+              ),
+            ],
+          ),
         );
       },
     );
