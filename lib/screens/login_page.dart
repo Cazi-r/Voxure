@@ -199,25 +199,29 @@ class _LoginPageState extends State<LoginPage> {
                     },
                   ),
                   SizedBox(height: 10),
+                  
                   // GitHub ile giris butonu
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                      backgroundColor: Colors.grey[800], // GitHub rengine yakin
+                      backgroundColor: Colors.black87,
                       foregroundColor: Colors.white,
                       minimumSize: Size(double.infinity, 50),
+                      side: BorderSide(color: Colors.grey.shade300),
                     ),
                     icon: Image.network(
-                      'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png', // GitHub logosu
+                      'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png',
                       height: 24,
+                      //color: Colors.white,
                     ),
                     label: const Text('GitHub ile Giris Yap'),
                     onPressed: () async {
                       setState(() {
                         _isLoading = true;
                       });
+                      
                       try {
-                        final user = await _authService.signInWithGitHub();
+                        final user = await _authService.signInWithGithub();
                         if (user != null && mounted) {
                           Navigator.pushReplacementNamed(context, '/home');
                         }
@@ -230,6 +234,7 @@ class _LoginPageState extends State<LoginPage> {
                       }
                     },
                   ),
+                  SizedBox(height: 10),
                 ],
               ),
             ),
