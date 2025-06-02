@@ -175,7 +175,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
     }
     
     // Admin UID kontrolu
-    const String adminUserId = "yWt0hnQif1ONGEpcAo8yPCitLQm1";
+    const String adminUserId = "RSoZIw4KBRRbVmcwMfYvzSzNtqA2";
     bool isAdmin = (userId == adminUserId);
 
     return Drawer(

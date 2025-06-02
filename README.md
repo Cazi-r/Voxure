@@ -1,110 +1,131 @@
-# Not Cepte
+# Voxure
 
-Not Cepte, kullanicilarin notlarini hizli ve kolay bir sekilde olusturmasina, duzenlemesine ve yonetmesine olanak taniyan bir Flutter uygulamasidir. Bu uygulama, modern bir arayuz ve guclu ozellikler ile kullanici deneyimini gelistirmeyi amaclamaktadir.
+Voxure, kullanicilarin demografik verilerine gore filtrelenmis anketleri goruntuleyebildigi ve oy kullanabilecegi bir Flutter uygulamasidir. Bu uygulama, modern bir arayuz ve guclu ozellikler ile anket oylama sistemini gelistirmeyi amaclamaktadir.
 
 ## Projenin Amaci
 
-Bu projenin temel amaci, kullanicilarin dijital notlarini guvenli bir sekilde saklayabilecekleri ve yonetebilecekleri bir platform sunmaktir. Kullanici dostu bir arayuz ve guclu ozellikler ile not alma islemlerini kolaylastirmak hedeflenmistir.
+Bu projenin temel amaci, kullanicilarin demografik verilerine gore uygun anketleri goruntuleyebilecekleri ve guvenli bir sekilde oy kullanabilecekleri bir platform sunmaktir. Kullanici dostu bir arayuz ve guclu ozellikler ile anket oylama islemlerini kolaylastirmak hedeflenmistir.
 
 ## Teknik Detaylar
 
 * Flutter: Uygulamanin temel gelistirme platformu.
-* Firebase: Kullanici kimlik dogrulama (Authentication) ve notlarin saklanmasi (Firestore).
+* Firebase: Kullanici kimlik dogrulama (Authentication) ve anket verilerinin saklanmasi (Firestore).
 * Provider: Durum yonetimi icin tercih edilmistir.
 * HTTP: API istekleri icin kullanilmistir.
 
 ## One Cikan Ozellikler
 
 * Kullanici Girisi: Firebase Authentication ile guvenli giris.
-* Not Yonetimi: Not olusturma, duzenleme, silme ve favorilere ekleme.
-* Tema Yonetimi: Karanlik ve acik tema arasinda gecis yapabilme.
+* Anket Yonetimi: Anket olusturma, duzenleme, silme ve oylama.
 * Responsive Tasarim: Tum cihazlarda uyumlu bir kullanici deneyimi.
-* Arama Fonksiyonu: Notlar arasinda hizli arama yapabilme.
-* Favoriler: Onemli notlari favorilere ekleme ve yonetme.
-* Cloud Firestore: Not verilerinin guvenli saklanmasi.
+* Istatistikler: Anket sonuclarini grafiklerle goruntuleme.
+* Cloud Firestore: Anket verilerinin guvenli saklanmasi.
 
 ## Kullanilan Teknolojiler
 
 * Flutter
 * Firebase (Authentication, Firestore)
 * Provider (State Management)
+* Shared Preferences (Yerel Veri Depolama)
+* Supabase (Veritabani ve Kimlik Dogrulama)
+* SQLite (Yerel Veritabani)
 * HTTP (API istekleri)
 
 ## Sayfalarin Gorevleri ve Icerikleri
 
-1. Giris Yap Ekrani (login_screen.dart)
+1. Giris Ekrani (login_screen.dart)
    * Kullanici e-posta ve sifre ile giris yapabilir
-   * "Sifremi Unuttum" ve "Kayit Ol" secenekleri mevcuttur
+   * Google ve GitHub hesaplari ile tek tiklama ile giris yapabilir
+   * "Giris Yap" ve "Kayit Ol" secenekleri mevcuttur
    * Basarili giristen sonra kullanici ana sayfaya yonlendirilir
    * Modern ve kullanici dostu arayuz
 
-2. Sifremi Unuttum Ekrani (forgot_password_screen.dart)
-   * Kullanici, e-posta adresini girerek sifre sifirlama baglantisi talep edebilir.
-   * Firebase Authentication uzerinden sifre sifirlama e-postasi gonderilir.
-   * Basarili islem sonrasi kullanici bilgilendirilir ve giris ekranina yonlendirilir.
+2. Kayit Ol Ekrani (register_screen.dart)
+   * Kullanici, e-posta ve sifre bilgilerini girerek yeni bir hesap olusturabilir
+   * Sifre dogrulama ozelligi ile kullanicidan iki kez sifre girmesi istenir
+   * Firebase Authentication kullanilarak kullanici kaydi gerceklestirilir
+   * Basarili kayit sonrasi kullanici ana sayfaya yonlendirilir
 
-3. Kayit Ol Ekrani (register_screen.dart)
-   * Kullanici, e-posta, sifre ve kullanici adi bilgilerini girerek yeni bir hesap olusturabilir.
-   * Sifre dogrulama ozelligi ile kullanicidan iki kez sifre girmesi istenir.
-   * Firebase Authentication kullanilarak kullanici kaydi gerceklestirilir.
-   * Basarili kayit sonrasi kullanici ana sayfaya yonlendirilir.
-
-4. Ana Sayfa (home_screen.dart)
+3. Ana Sayfa (home_screen.dart)
    * Kullaniciyi karsilayan bir hos geldiniz mesaji icerir
-   * Uygulamanin ana ozelliklerine (Yeni Not, Notlarim, Favoriler, Ayarlar) hizli erisim saglayan kartlar sunar
-   * Renk gradyanlari ile gorsel olarak cekici bir arayuz
+   * Kullanici bilgileri eksikse veya yoksa "Lutfen profil bilgilerinizi tamamlayin" uyarisi gosterir
+   * Uygulamanin ana ozelliklerine (Anketler, Istatistikler, Profil, Ayarlar) hizli erisim saglayan kartlar sunar
+   * Gorsel olarak sade arayuz
 
-5. Notlarim Ekrani (notes_screen.dart)
-   * Kullanicinin tum notlarini listeler
-   * Notlari arama fonksiyonu
-   * Her not icin duzenleme, silme ve yildizlama/favorilere ekleme islemleri
-   * Floating action button ile yeni not ekleme
+4. Anketler Ekrani (surveys_page.dart)
+   * Kullanicinin kisisel bilgilerine uygun anketleri listeler
+   * Her anket icin oylama islemleri
 
-6. Yeni Not Ekle Ekrani (add_note_screen.dart)
-   * Baslik ve icerik ile yeni not olusturma
-   * Mevcut notlari goruntuleyebilme
-   * Notlari duzenleme veya silme
-   * Kullanici dostu modal dialog ile not ekleme arayuzu
+5. Yeni Anket Ekle Ekrani (survey_admin.dart)
+   * Baslik ve sorular ile yeni anket olusturma
+   * Mevcut anketleri goruntuleyebilme
+   * Anketleri duzenleme veya silme
+   * Kullanici dostu popup pencere ile anket ekleme arayuzu
 
-7. Favoriler Ekrani (favorites_screen.dart)
-   * Yildizlanmis/favorilere eklenmis notlari gosterir
-   * Favorilerden cikarma secenegi
-   * Favori notlari duzenleme ve silme
+6. Istatistikler Ekrani (statistics_screen.dart)
+   * Anket sonuclarini grafiklerle gosterir
+   * Detayli analiz ve raporlama
+   * Kullanici bazli anket katilim oranlari
 
-8. Ayarlar Ekrani (settings_screen.dart)
-   * Uygulama temasini degistirme (karanlik/acik mod)
-   * Kullanici profili ve hesap ayarlari
-   * Bildirim tercihleri
-   * Uygulama hakkinda bilgiler ve yardim secenekleri
+7. Profil Guncelleme Ekrani (profile_update_page.dart)
+   * Kullanici bilgilerini guncelleme imkani
+   * Kullanici bilgilerinin Firestore'da saklanmasi
+   * Responsive tasarim ile tum cihazlarda uyumlu arayuz
+   * Kullanici dostu form validasyonu
+   * Basarili guncelleme sonrasi bildirim gosterme
+   * Yerel veri depolama ozellikleri:
+     - Shared Preferences ile kullanici tercihlerini saklama
+     - SQLite ile profil bilgilerini yerel depolama
+     - Veri yedekleme
 
-## Drawer Menu ve Logo API Bilgileri
+## Drawer Menu ve Logo API
 
-Drawer menude kullanilan logo, Brandfetch API'sinden alinmaktadir:
+Drawer menu, kullanicilarin uygulama icinde kolay gezinmesini saglayan temel navigasyon yapisini icerir:
 
-API URL: https://cdn.brandfetch.io/notejoy.com/v1/196/h/196/logo?c=118m3Jx8ZugQwuDb2f
+### Menu Ogeleri
+* Ana Sayfa: Kullaniciyi karsilama ekrani ve ozet bilgiler
+* Anketler: Kullanicinin katilabilecegi aktif anketler
+* Istatistikler: Anket sonuclarinin grafik gosterimi
+* Profil: Kullanici bilgileri ve guncelleme
+* Cikis: Oturum kapatma
 
-Bu logo, LogoProvider sinifi tarafindan yonetilmektedir. fetchLogoFromApi() metodu, API'den logo URL'sini alir ve uygulama genelinde kullanilabilir hale getirir.
+### BasePage Widget Yapisi
+Tum sayfalar `BasePage` widget'ini kullanir ve su ozellikleri icerir:
+* Standart app bar tasarimi
+* Drawer menu entegrasyonu
+* Sayfa basligi yonetimi
+* Responsive tasarim destegi
+* Kullanici yetkilendirme kontrolu
 
 ## Login Bilgilerinin Saklanmasi
 
--firebase e posta: ayseflutter@gmail.com -firebase sifre: flutter123.
+Kullanici kimlik dogrulama ve veri saklama islemleri asagidaki sekilde gerceklestirilmektedir:
 
-Kullanici giris bilgileri Firebase Authentication kullanilarak guvenli bir sekilde saklanmaktadir:
+1. Kimlik Dogrulama:
+   * E-posta/sifre ile giris yapildiginda Firebase Authentication kullanilir
+   * Google ve GitHub ile sosyal medya girisleri desteklenir
+   * Tum kimlik dogrulama islemleri Firebase tarafindan yonetilir
 
-1. Kullanici, e-posta ve sifre ile giris yaptiginda, bilgiler Firebase Authentication'a gonderilir
-2. Firebase, kullanici bilgilerini kendi guvenli veritabaninda saklar
-3. Basarili giris sonrasi, oturum belirteci (token) uygulamada saklanir ve API isteklerinde kullanilir
-4. Hassas bilgiler (sifre vb.) cihazda saklanmaz; tum kimlik dogrulama Firebase tarafindan yonetilir
+2. Veri Saklama:
+   * Hassas bilgiler (sifre, token vb.) cihazda saklanmaz
+   * Kullanici profili bilgileri Firestore'da tutulur
+   * Oturum durumu ve tercihler SharedPreferences ile yerel olarak saklanir
+   * Anket verileri ve istatistikler Supabase veritabaninda tutulur
+
+3. Guvenlik:
+   * Tum veri transferleri SSL/TLS ile sifrelenir
+   * Firebase'in guvenlik kurallari ile veri erisimi kontrol edilir
+   * Kullanici yetkilendirmesi token tabanli yapilir
 
 ## Firebase Authentication Kullanici Bilgileri
 
 Firebase Authentication'da kayitli kullanicilar asagidaki gibidir:
 
 1. Kullanici 1
-   * E-posta: aysegulerrgun@gmail.com
-   * Olusturulma Tarihi: 4 Nisan 2025
-   * Son Giris Tarihi: 6 Nisan 2025
-   * User UID: 7wdOFSpBmttWF4N1Fmmuow3FwtBx1
+   * E-posta: admin@example.com
+   * Olusturulma Tarihi: 3 Haziran 2025
+   * Son Giris Tarihi: 3 Nisan 2025
+   * User UID: RSoZIw4KBRRbVmcwMfYvzSzNtqA2
 
 2. Kullanici 2
    * E-posta: test@gmail.com
@@ -124,41 +145,32 @@ Uygulama, farkli platformlar icin Firebase yapilandirmasini `firebase_options.da
 
 * Web
 * Android
-* iOS
-* macOS
 * Windows
 
 Her platform icin API anahtarlari, uygulama kimlikleri ve diger yapilandirma bilgileri bu dosyada bulunmaktadir.
 
-## Tema Yonetimi
+## Supabase'de Anket Saklama Ornegi
 
-Uygulama, karanlik ve acik tema arasinda gecis yapma ozelligine sahiptir:
-
-1. Tema tercihleri, `ThemeProvider` sinifi tarafindan yonetilir
-2. Kullanicilar, Ayarlar ekranindan tema tercihlerini degistirebilirler
-3. Secilen tema, uygulama genelinde tutarli bir gorunum saglar
-
-## Cloud Firestore'da Not Saklama Ornegi
-
-Asagida, Cloud Firestore'da bir notun nasil saklandigini gosteren bir ornek bulunmaktadir:
+Asagida, Supabase'de bir anketin nasil saklandigini gosteren bir ornek bulunmaktadir:
 
 ```json
 {
-  "content": "OYS ve projeyi yukle",
-  "email": "aysegulerrgun@gmail.com",
-  "isStarred": true,
-  "timestamp": "April 7, 2025 at 11:08:47 PM UTC+3",
-  "title": "Odev1",
-  "uid": "7wdOFSpBmttWF4N1Fmmuow3FwtBx1"
+  "id": "079fe4db-18cd-4f59-a543-02bb7dcba0a0",
+  "soru": "Hangi Sosyal Medya Platformunu Kullanmayi Tercih Ediyorsunuz",
+  "secenekler": ["Instagram", "X (Twitter)", "Facebook"],
+  "oylar": ["0", "1", "0"],
+  "kilitlendi": false,
+  "ikon": "public",
+  "renk": "blue",
+  "minYas": 15,
+  "ilFiltresi": false,
+  "belirliIl": null,
+  "okulFiltresi": false,
+  "belirliOkul": null,
+  "created_at": "2025-06-02 20:04:54.276308+00",
+  "updated_at": "2025-06-02 20:29:36.83764+00"
 }
 ```
-
-* email: Notu olusturan kullanicinin mail adresi
-* uid: Notu olusturan kullanicinin id'si
-* title: Notun basligi (string).
-* content: Notun icerigi (string).
-* isStarred: Notun favorilere eklenip eklenmedigini belirten durum (boolean).
-* timestamp: Notun olusturulma veya guncellenme zamani (timestamp).
 
 ## Cloud Firestore'da Kullanici Saklama Ornegi
 
@@ -166,65 +178,60 @@ Asagida, Cloud Firestore'da bir kullanicinin nasil saklandigini gosteren bir orn
 
 ```json
 {
-  "createdAt": "April 7, 2025 at 10:07:34 PM UTC+3",
-  "email": "test2@gmail.com",
-  "uid": "ZnZkWmHuEz40UMbvSxXmJA0JVJ3",
-  "username": "Test-2 kullanici"
+  "birthDate": "June 3, 1994 at 12:00:00 AM UTC+3",
+  "city": "Istanbul",
+  "email": "admin@example.com",
+  "name": "Admin",
+  "school": "Istanbul Sabahattin Zaim Universitesi",
+  "surname": "Admin",
+  "updatedAt": "June 3, 2025 at 12:30:30 AM UTC+3"
 }
 ```
 
-* createdAt: Kullanicinin ekledigi tarih
-* email: Kullanicinin e-posta adresi (string).
-* uid: Kullanicinin id'si
-* username: Kullanici adi (string).
-
 ## Grup Uyelerinin Projeye Katkisi
 
-* Aysegul Ergun:
-  * Ana sayfa (home_screen.dart)
-  * notlarim ekrani (notes_screen.dart)
-  * Yeni not ekle ekrani (add_note_screen.dart)
-  * Favoriler ekrani (favorites_screen.dart)
-  * Ayarlar ekrani (settings_screen.dart)
-  * drawer (drawer.dart)
-  * providers (logo_provider.dart) ve (theme_provider.dart)
-  * services (auth_service.dart) ve (firestore.dart)
-  * theme (theme.dart)
-  * widgets (logo_display.dart)
-  * Tema yonetimi ve responsive tasarim
-  * Firebase yapilandirmasi
+* Yusuf Erdodu:
+  * Ana sayfa (home_page.dart)
+  * Anketler ekrani (survey_page.dart)
+  * Istatistikler ekrani (statistics_page.dart)
+  * Servisler (auth_service.dart, firebase_service.dart, local_storage_service.dart, supabase_service.dart)
+  * Supabase entegrasyonu
 
-* Omer Demirtas:
-  * Kayit ol ve sifremi unuttum ozellikleri
-  * Firebase Authentication entegrasyonu
-  * Login ekrani (login_screen.dart) gelistirme
-  * Sifremi unuttum ekrani (forgot_password_screen.dart)
-  * Kayit ol ekrani (register_screen.dart)
+* Metehan Beyaz:
+  * Firebase Authentication entegrasyonu ve yapilandirmasi
+  * Login ekrani (login_page.dart) gelistirme
+  * Kayit ol ekrani (register_page.dart)
+  * Drawer (custom_drawer.dart)
+
+* Furkan Yilmaz:
+  * Profil guncelleme ekrani (profile_update_page.dart)
+  * Yeni anket ekle ekrani (survey_admin.dart)
+  * Supabase yapilandirmasi
+  * Kullanici bilgileri yonetimi
+  * Kullanici arayuzu gelistirmeleri
 
 ## Modulerlik ve Kod Yapisi
 
 1. Widgetlar:
-   * drawer.dart: Uygulamanin yan menusu (Drawer) icin bir bilesen olarak tasarlanmistir.
-   * logo_display.dart: Logo goruntulenme islemleri icin ayri bir widget olarak olusturulmustur.
+   * custom_drawer.dart: Uygulamanin yan menusu icin ozel tasarlanmis bilesen
+   * base_page.dart: Temel sayfa yapisi icin kullanilan ana widget
+   * custom_app_bar.dart: Ozel tasarlanmis uygulama cubugu
 
 2. Servisler:
-   * firestore.dart: Cloud Firestore ile veri islemleri (CRUD) icin bir servis olarak yapilandirilmistir.
+   * firestore.dart: Cloud Firestore ile veri islemleri bir servis olarak yapilandirilmistir.
    * auth_service.dart: Firebase Authentication islemleri icin ayri bir servis olarak tasarlanmistir.
-
-3. Saglayicilar (Providers):
-   * theme_provider.dart: Tema yonetimi icin bir saglayici olarak kullanilmistir.
-   * logo_provider.dart: Logo yukleme ve yonetimi icin bir saglayici olarak yapilandirilmistir.
+   * supabase_service.dart: Supabase veritabani islemleri icin ayri bir servis olarak tasarlanmistir.
+   * local_storage_service.dart: Yerel depolama islemleri icin ayri bir servis olarak tasarlanmistir.
 
 4. Ekranlar (Screens):
-   * Her bir ekran (ornegin: login_screen.dart, notes_screen.dart) ayri bir dosyada tanimlanmistir.
+   * Her bir ekran (ornegin: login_screen.dart, surveys_screen.dart) ayri bir dosyada tanimlanmistir.
    * Bu ekranlar, ilgili islevsellikleri kapsar ve diger bilesenlerle kolayca entegre edilebilir.
 
-5. Tema ve Yapilandirma:
-   * theme.dart: Karanlik ve acik tema yonetimi icin merkezi bir yapi sunar.
+5. Yapilandirma:
    * firebase_options.dart: Firebase yapilandirma bilgilerini icerir.
 
 6. Tekrar Kullanilabilirlik:
-   * Kodun farkli bolumleri (ornegin: Firestore islemleri, tema yonetimi) moduler yapilar sayesinde birden fazla yerde tekrar kullanilabilir.
+   * Kodun farkli bolumleri (ornegin: Firestore islemleri, widgetlar) moduler yapilar sayesinde birden fazla yerde tekrar kullanilabilir.
    * Bu, kodun daha temiz ve surdurulebilir olmasini saglar.
 
 ## Gelistirme Ortami
@@ -238,4 +245,4 @@ Bu uygulamanin gelistirilmesi icin asagidaki araclar kullanilmistir:
 
 ## Iletisim
 
-Proje baglantisi: https://github.com/AysegulErgun/notcepte
+Proje baglantisi: https://github.com/MetoisTaken/Vote_APP
