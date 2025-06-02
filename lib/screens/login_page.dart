@@ -102,36 +102,46 @@ class _LoginPageState extends State<LoginPage> {
                   // E-posta giriş alanı
                   TextField(
                     controller: emailController,
-                    decoration: InputDecoration(
-                        labelText: "E-posta",
-                        prefixIcon: Icon(Icons.email),
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10))),
                     keyboardType: TextInputType.emailAddress,
-                    textInputAction: TextInputAction.next,
-                    enableSuggestions: true,
-                    autocorrect: false,
+                    decoration: InputDecoration(
+                      labelText: 'E-posta',
+                      hintText: 'E-posta adresinizi girin',
+                      prefixIcon: Icon(Icons.email),
+                      border: OutlineInputBorder(),
+                    ),
                   ),
-                  SizedBox(height: 12),
+                  SizedBox(height: 16),
                   
                   // Şifre giriş alanı
                   TextField(
                     controller: sifreController,
                     obscureText: true,
                     decoration: InputDecoration(
-                      labelText: "Şifre",
+                      labelText: 'Şifre',
+                      hintText: 'Şifrenizi girin',
                       prefixIcon: Icon(Icons.lock),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10)),
+                      border: OutlineInputBorder(),
                     ),
-                    textInputAction: TextInputAction.done,
-                    enableSuggestions: true,
-                    autocorrect: true,
-                    keyboardType: TextInputType.visiblePassword,
                   ),
                   SizedBox(height: 24),
                   
-                  // Giriş butonu
+                  // Şifremi unuttum linki
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () {
+                        if (!_isValidEmail(emailController.text)) {
+                          _showMessage("Hata", "Şifre sıfırlama için geçerli bir e-posta adresi giriniz.");
+                          return;
+                        }
+                        _resetPassword();
+                      },
+                      child: Text('Şifremi Unuttum'),
+                    ),
+                  ),
+                  SizedBox(height: 24),
+                  
+                  // Giriş ve Kayıt butonları
                   _isLoading
                       ? CircularProgressIndicator()
                       : Row(
@@ -163,73 +173,6 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           ],
                         ),
-                  SizedBox(height: 20),
-                  
-                  // Google ile giris butonu
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                      backgroundColor: Colors.white,
-                      foregroundColor: Colors.black,
-                      minimumSize: Size(double.infinity, 50),
-                      side: BorderSide(color: Colors.grey.shade300),
-                    ),
-                    icon: Image.network(
-                      'https://cdn1.iconfinder.com/data/icons/google-s-logo/150/Google_Icons-09-512.png',
-                      height: 24,
-                    ),
-                    label: const Text('Google ile Giris Yap'),
-                    onPressed: () async {
-                      setState(() {
-                        _isLoading = true;
-                      });
-                      
-                      try {
-                        final user = await _authService.signInWithGoogle();
-                        if (user != null && mounted) {
-                          Navigator.pushReplacementNamed(context, '/home');
-                        }
-                      } finally {
-                        if (mounted) {
-                          setState(() {
-                            _isLoading = false;
-                          });
-                        }
-                      }
-                    },
-                  ),
-                  SizedBox(height: 10),
-                  // GitHub ile giris butonu
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                      backgroundColor: Colors.grey[800], // GitHub rengine yakin
-                      foregroundColor: Colors.white,
-                      minimumSize: Size(double.infinity, 50),
-                    ),
-                    icon: Image.network(
-                      'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png', // GitHub logosu
-                      height: 24,
-                    ),
-                    label: const Text('GitHub ile Giris Yap'),
-                    onPressed: () async {
-                      setState(() {
-                        _isLoading = true;
-                      });
-                      try {
-                        final user = await _authService.signInWithGitHub();
-                        if (user != null && mounted) {
-                          Navigator.pushReplacementNamed(context, '/home');
-                        }
-                      } finally {
-                        if (mounted) {
-                          setState(() {
-                            _isLoading = false;
-                          });
-                        }
-                      }
-                    },
-                  ),
                 ],
               ),
             ),
