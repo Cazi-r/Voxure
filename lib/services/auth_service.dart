@@ -7,7 +7,12 @@ import 'package:flutter/services.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: ['email', 'profile'],
+    signInOption: SignInOption.standard,
+    hostedDomain: '',  // tüm domainlere izin ver
+    clientId: '',      // Android için gerekli değil
+  );
 
   // TODO: Bunlari Firebase Remote Config veya guvenli bir yerden alin
   final String githubClientId = 'Ov23liJTc47yorORCyTL';
@@ -28,10 +33,19 @@ class AuthService {
   // Google ile giris yap
   Future<UserCredential?> signInWithGoogle() async {
     try {
+      // Önce mevcut hesaptan çıkış yap
+      await _googleSignIn.signOut();
+      
+      print('Google giris basladi');
       // Google Sign-In akisini baslat
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       
-      if (googleUser == null) return null;
+      if (googleUser == null) {
+        print('Google giris iptal edildi');
+        return null;
+      }
+
+      print('Google hesabi secildi: ${googleUser.email}');
 
       // Google Sign-In kimlik bilgilerini al
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
@@ -42,8 +56,12 @@ class AuthService {
         idToken: googleAuth.idToken,
       );
 
+      print('Firebase ile giris yapiliyor...');
       // Firebase ile giris yap
-      return await _auth.signInWithCredential(credential);
+      final UserCredential userCredential = await _auth.signInWithCredential(credential);
+      print('Firebase giris basarili: ${userCredential.user?.email}');
+      
+      return userCredential;
     } catch (e) {
       print('Google giris hatasi: $e');
       return null;
