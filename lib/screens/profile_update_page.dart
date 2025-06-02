@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/firebase_service.dart';
+import '../services/local_storage_service.dart';
 import '../widgets/custom_drawer.dart';
 import '../widgets/base_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -14,6 +15,7 @@ class ProfileUpdatePage extends StatefulWidget {
 class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
   final FirebaseService _firebaseService = FirebaseService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final LocalStorageService _localStorage = LocalStorageService();
   
   User? currentUser;
   String? userEmail;
@@ -102,6 +104,7 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
   @override
   void initState() {
     super.initState();
+    _initializeLocalStorage();
     _loadUserInfo();
   }
   
@@ -110,6 +113,10 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
     _nameController.dispose();
     _surnameController.dispose();
     super.dispose();
+  }
+  
+  Future<void> _initializeLocalStorage() async {
+    await _localStorage.init();
   }
   
   void _loadUserInfo() async {
@@ -123,6 +130,14 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
       if (currentUser != null) {
         userEmail = currentUser!.email;
         
+        // Önce yerel depolamadan yüklemeyi dene
+        Map<String, dynamic>? localUserData = await _localStorage.getUserFromSQLite(currentUser!.uid);
+        
+        if (localUserData != null) {
+          _updateUIFromUserData(localUserData);
+        }
+        
+        // Firebase'den güncel verileri al
         DocumentSnapshot userDoc = await _firestore
             .collection('users')
             .doc(currentUser!.uid)
@@ -131,35 +146,19 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
         if (userDoc.exists) {
           Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
           
-          Timestamp? birthDateTimestamp = userData['birthDate'] as Timestamp?;
-          if (birthDateTimestamp != null) {
-            selectedDate = birthDateTimestamp.toDate();
-            _calculateAge(); // Yaşı hesapla
-          }
-          
-          Timestamp? updatedAtTimestamp = userData['updatedAt'] as Timestamp?;
-          if (updatedAtTimestamp != null) {
-            lastUpdateTime = updatedAtTimestamp.toDate();
-          }
-          
-          setState(() {
-            _nameController.text = userData['name'] as String? ?? '';
-            _surnameController.text = userData['surname'] as String? ?? '';
-            selectedCity = userData['city'] as String?;
-            selectedSchool = userData['school'] as String?;
-            
-            // Yaş kontrolü
-            if (_age != null && _age! < 18 && selectedSchool != 'Okumuyorum') {
-              selectedSchool = 'Okumuyorum';
-            }
-            
-            _isLoading = false;
+          // Firebase'den gelen verileri yerel depolamaya kaydet
+          await _localStorage.saveUserToSQLite({
+            'id': currentUser!.uid,
+            ...userData,
           });
-        } else {
-          setState(() {
-            _isLoading = false;
-          });
+          await _localStorage.saveUserToPrefs(userData);
+          
+          _updateUIFromUserData(userData);
         }
+        
+        setState(() {
+          _isLoading = false;
+        });
       } else {
         setState(() {
           _isLoading = false;
@@ -172,6 +171,30 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
       });
       _showMessage("Hata", "Kullanıcı bilgileri yüklenirken bir hata oluştu.");
     }
+  }
+  
+  void _updateUIFromUserData(Map<String, dynamic> userData) {
+    Timestamp? birthDateTimestamp = userData['birthDate'] as Timestamp?;
+    if (birthDateTimestamp != null) {
+      selectedDate = birthDateTimestamp.toDate();
+      _calculateAge();
+    }
+    
+    Timestamp? updatedAtTimestamp = userData['updatedAt'] as Timestamp?;
+    if (updatedAtTimestamp != null) {
+      lastUpdateTime = updatedAtTimestamp.toDate();
+    }
+    
+    setState(() {
+      _nameController.text = userData['name'] as String? ?? '';
+      _surnameController.text = userData['surname'] as String? ?? '';
+      selectedCity = userData['city'] as String?;
+      selectedSchool = userData['school'] as String?;
+      
+      if (_age != null && _age! < 18 && selectedSchool != 'Okumuyorum') {
+        selectedSchool = 'Okumuyorum';
+      }
+    });
   }
   
   Future<void> _saveProfile() async {
@@ -224,7 +247,7 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
     
     try {
       if (currentUser != null) {
-        await _firestore.collection('users').doc(currentUser!.uid).set({
+        Map<String, dynamic> userData = {
           'email': userEmail,
           'name': _nameController.text.trim(),
           'surname': _surnameController.text.trim(),
@@ -232,7 +255,20 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
           'city': selectedCity,
           'school': selectedSchool,
           'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
+        };
+
+        // Firebase'e kaydet
+        await _firestore.collection('users').doc(currentUser!.uid).set(
+          userData,
+          SetOptions(merge: true)
+        );
+        
+        // Yerel depolamaya kaydet
+        await _localStorage.saveUserToSQLite({
+          'id': currentUser!.uid,
+          ...userData,
+        });
+        await _localStorage.saveUserToPrefs(userData);
         
         setState(() {
           _isSaving = false;
@@ -251,7 +287,7 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
       setState(() {
         _isSaving = false;
       });
-      _showMessage("Hata", "Profil bilgileri kaydedilirken bir hata oluştu.");
+      _showMessage("Hata", "Profil bilgileriniz güncellenirken bir hata oluştu.");
     }
   }
   

@@ -10,6 +10,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'services/firebase_service.dart';
 import 'services/auth_service.dart';
+import 'services/local_storage_service.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -25,6 +26,8 @@ void main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
     
+    // Yerel depolama servisini başlat
+    await LocalStorageService().init();
     
     print('Firebase initialized successfully');
   } catch (e) {
