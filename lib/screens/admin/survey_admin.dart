@@ -317,39 +317,39 @@ class _SurveyDialogState extends State<_SurveyDialog> {
 
   // Turkiye'deki illerin listesi
   final List<String> cities = [
-    'Adana', 'Adiyaman', 'Afyonkarahisar', 'Agri', 'Aksaray', 'Amasya', 'Ankara', 'Antalya',
-    'Ardahan', 'Artvin', 'Aydin', 'Balikesir', 'Bartin', 'Batman', 'Bayburt', 'Bilecik',
-    'Bingol', 'Bitlis', 'Bolu', 'Burdur', 'Bursa', 'Canakkale', 'Cankiri', 'Corum',
-    'Denizli', 'Diyarbakir', 'Duzce', 'Edirne', 'Elazig', 'Erzincan', 'Erzurum', 'Eskisehir',
-    'Gaziantep', 'Giresun', 'Gumushane', 'Hakkari', 'Hatay', 'Igdir', 'Isparta', 'Istanbul',
-    'Izmir', 'Kahramanmaras', 'Karabuk', 'Karaman', 'Kars', 'Kastamonu', 'Kayseri', 'Kilis',
-    'Kirikkale', 'Kirklareli', 'Kirsehir', 'Kocaeli', 'Konya', 'Kutahya', 'Malatya', 'Manisa',
-    'Mardin', 'Mersin', 'Mugla', 'Mus', 'Nevsehir', 'Nigde', 'Ordu', 'Osmaniye',
-    'Rize', 'Sakarya', 'Samsun', 'Sanliurfa', 'Siirt', 'Sinop', 'Sivas', 'Sirnak',
-    'Tekirdag', 'Tokat', 'Trabzon', 'Tunceli', 'Usak', 'Van', 'Yalova', 'Yozgat', 'Zonguldak'
+    'Adana', 'Adıyaman', 'Afyonkarahisar', 'Ağrı', 'Aksaray', 'Amasya', 'Ankara', 'Antalya',
+    'Ardahan', 'Artvin', 'Aydın', 'Balıkesir', 'Bartın', 'Batman', 'Bayburt', 'Bilecik',
+    'Bingöl', 'Bitlis', 'Bolu', 'Burdur', 'Bursa', 'Çanakkale', 'Çankırı', 'Çorum',
+    'Denizli', 'Diyarbakır', 'Düzce', 'Edirne', 'Elazığ', 'Erzincan', 'Erzurum', 'Eskişehir',
+    'Gaziantep', 'Giresun', 'Gümüşhane', 'Hakkari', 'Hatay', 'Iğdır', 'Isparta', 'İstanbul',
+    'İzmir', 'Kahramanmaraş', 'Karabük', 'Karaman', 'Kars', 'Kastamonu', 'Kayseri', 'Kilis',
+    'Kırıkkale', 'Kırklareli', 'Kırşehir', 'Kocaeli', 'Konya', 'Kütahya', 'Malatya', 'Manisa',
+    'Mardin', 'Mersin', 'Muğla', 'Muş', 'Nevşehir', 'Niğde', 'Ordu', 'Osmaniye',
+    'Rize', 'Sakarya', 'Samsun', 'Şanlıurfa', 'Siirt', 'Sinop', 'Sivas', 'Şırnak',
+    'Tekirdağ', 'Tokat', 'Trabzon', 'Tunceli', 'Uşak', 'Van', 'Yalova', 'Yozgat', 'Zonguldak'
   ];
   
   final List<String> schools = [
     'Okumuyorum',
-    'Altinbas Universitesi',
-    'Bahcesehir Universitesi',
-    'Beykent Universitesi',
-    'Bogazici Universitesi',
-    'Galatasaray Universitesi',
-    'Isik Universitesi',
-    'Istanbul Kultur Universitesi',
-    'Istanbul Medipol Universitesi',
-    'Istanbul Sabahattin Zaim Universitesi',
-    'Istanbul Teknik Universitesi',
-    'Istanbul Ticaret Universitesi',
-    'Istanbul Universitesi',
-    'Koc Universitesi',
-    'Maltepe Universitesi',
-    'Marmara Universitesi',
-    'Ozyegin Universitesi',
-    'Sabanci Universitesi',
-    'Yildiz Teknik Universitesi',
-    'Diger'
+    'Altınbaş Üniversitesi',
+    'Bahçeşehir Üniversitesi',
+    'Beykent Üniversitesi',
+    'Boğaziçi Üniversitesi',
+    'Galatasaray Üniversitesi',
+    'Işık Üniversitesi',
+    'İstanbul Kültür Üniversitesi',
+    'İstanbul Medipol Üniversitesi',
+    'İstanbul Sabahattin Zaim Üniversitesi',
+    'İstanbul Teknik Üniversitesi',
+    'İstanbul Ticaret Üniversitesi',
+    'İstanbul Üniversitesi',
+    'Koç Üniversitesi',
+    'Maltepe Üniversitesi',
+    'Marmara Üniversitesi',
+    'Özyeğin Üniversitesi',
+    'Sabancı Üniversitesi',
+    'Yıldız Teknik Üniversitesi',
+    'Diğer'
   ];
 
   @override
