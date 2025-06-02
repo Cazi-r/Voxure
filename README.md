@@ -78,7 +78,7 @@ Bu projenin temel amaci, kullanicilarin demografik verilerine gore uygun anketle
      - SQLite ile profil bilgilerini yerel depolama
      - Veri yedekleme
 
-## Drawer Menu ve Logo API
+## Drawer Menu
 
 Drawer menu, kullanicilarin uygulama icinde kolay gezinmesini saglayan temel navigasyon yapisini icerir:
 
