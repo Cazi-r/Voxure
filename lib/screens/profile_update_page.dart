@@ -119,175 +119,227 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
     await _localStorage.init();
   }
   
-  void _loadUserInfo() async {
-    setState(() {
-      _isLoading = true;
-    });
+  Future<void> _loadUserInfo() async {
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
     
     try {
-      currentUser = _firebaseService.getCurrentUser();
+      // Kullanici kontrolu
+      final user = _firebaseService.getCurrentUser();
+      if (user == null) {
+        throw Exception("Kullanici oturumu bulunamadi");
+      }
+
+      userEmail = user.email;
       
-      if (currentUser != null) {
-        userEmail = currentUser!.email;
-        
-        // Önce yerel depolamadan yüklemeyi dene
-        Map<String, dynamic>? localUserData = await _localStorage.getUserFromSQLite(currentUser!.uid);
-        
+      // Yerel depolamadan veri yukleme
+      Map<String, dynamic>? localUserData;
+      try {
+        localUserData = await _localStorage.getUserFromSQLite(user.uid);
         if (localUserData != null) {
           _updateUIFromUserData(localUserData);
         }
-        
-        // Firebase'den güncel verileri al
+      } catch (e) {
+        print('Yerel depolama okuma hatasi: $e');
+      }
+      
+      // Firebase'den veri yukleme
+      try {
         DocumentSnapshot userDoc = await _firestore
             .collection('users')
-            .doc(currentUser!.uid)
+            .doc(user.uid)
             .get();
         
         if (userDoc.exists) {
           Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
           
-          // Firebase'den gelen verileri yerel depolamaya kaydet
+          // Yerel depolamaya kaydet
           await _localStorage.saveUserToSQLite({
-            'id': currentUser!.uid,
+            'id': user.uid,
             ...userData,
           });
           await _localStorage.saveUserToPrefs(userData);
           
-          _updateUIFromUserData(userData);
+          if (mounted) {
+            _updateUIFromUserData(userData);
+          }
+        } else {
+          print('Kullanici verisi bulunamadi');
         }
-        
-        setState(() {
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _isLoading = false;
-        });
-        _showMessage("Hata", "Kullanıcı bilgisi bulunamadı.");
+      } catch (e) {
+        print('Firebase veri okuma hatasi: $e');
+        // Eger yerel veri varsa onunla devam et, yoksa hatayi goster
+        if (localUserData == null) {
+          throw e;
+        }
       }
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      _showMessage("Hata", "Kullanıcı bilgileri yüklenirken bir hata oluştu.");
+      if (mounted) {
+        _showMessage("Hata", "Kullanici bilgileri yuklenirken bir hata olustu: ${e.toString()}");
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
   
   void _updateUIFromUserData(Map<String, dynamic> userData) {
-    Timestamp? birthDateTimestamp = userData['birthDate'] as Timestamp?;
-    if (birthDateTimestamp != null) {
-      selectedDate = birthDateTimestamp.toDate();
-      _calculateAge();
-    }
-    
-    Timestamp? updatedAtTimestamp = userData['updatedAt'] as Timestamp?;
-    if (updatedAtTimestamp != null) {
-      lastUpdateTime = updatedAtTimestamp.toDate();
-    }
-    
-    setState(() {
-      _nameController.text = userData['name'] as String? ?? '';
-      _surnameController.text = userData['surname'] as String? ?? '';
-      selectedCity = userData['city'] as String?;
-      selectedSchool = userData['school'] as String?;
-      
-      if (_age != null && _age! < 18 && selectedSchool != 'Okumuyorum') {
-        selectedSchool = 'Okumuyorum';
+    if (!mounted) return;
+
+    try {
+      // Dogum tarihi kontrolu
+      if (userData['birthDate'] != null) {
+        if (userData['birthDate'] is Timestamp) {
+          selectedDate = (userData['birthDate'] as Timestamp).toDate();
+        } else if (userData['birthDate'] is DateTime) {
+          selectedDate = userData['birthDate'] as DateTime;
+        }
+        _calculateAge();
       }
-    });
+      
+      // Son guncelleme zamani kontrolu
+      if (userData['updatedAt'] != null) {
+        if (userData['updatedAt'] is Timestamp) {
+          lastUpdateTime = (userData['updatedAt'] as Timestamp).toDate();
+        } else if (userData['updatedAt'] is DateTime) {
+          lastUpdateTime = userData['updatedAt'] as DateTime;
+        }
+      }
+
+      setState(() {
+        _nameController.text = userData['name']?.toString() ?? '';
+        _surnameController.text = userData['surname']?.toString() ?? '';
+        selectedCity = userData['city']?.toString();
+        selectedSchool = userData['school']?.toString();
+        
+        // 18 yas kontrolu
+        if (_age != null && _age! < 18 && selectedSchool != 'Okumuyorum') {
+          selectedSchool = 'Okumuyorum';
+        }
+      });
+    } catch (e) {
+      print('UI guncelleme hatasi: $e');
+    }
   }
   
   Future<void> _saveProfile() async {
-    if (_nameController.text.trim().isEmpty) {
-      _showMessage("Eksik Bilgi", "Lütfen adınızı girin.");
-      return;
-    }
-    
-    if (_surnameController.text.trim().isEmpty) {
-      _showMessage("Eksik Bilgi", "Lütfen soyadınızı girin.");
-      return;
-    }
-    
-    if (selectedDate == null) {
-      _showMessage("Eksik Bilgi", "Lütfen doğum tarihinizi seçin.");
-      return;
-    }
-    
-    if (selectedCity == null) {
-      _showMessage("Eksik Bilgi", "Lütfen yaşadığınız ili seçin.");
-      return;
-    }
-    
-    if (selectedSchool == null) {
-      _showMessage("Eksik Bilgi", "Lütfen okulunuzu seçin.");
-      return;
-    }
-    
-    if (lastUpdateTime != null) {
-      final now = DateTime.now();
+    try {
+      // Form validasyonu
+      String name = _nameController.text.trim();
+      String surname = _surnameController.text.trim();
       
-      final DateTime nextAllowedUpdate = DateTime(
-        lastUpdateTime!.year + ((lastUpdateTime!.month + 6) > 12 ? 1 : 0),
-        ((lastUpdateTime!.month + 6) % 12 == 0 ? 12 : (lastUpdateTime!.month + 6) % 12),
-        lastUpdateTime!.day,
-      );
-      
-      if (now.isBefore(nextAllowedUpdate)) {
-        _showMessage(
-          "Güncelleme Sınırlaması", 
-          "Profil bilgilerinizi 6 ayda sadece bir kez güncelleyebilirsiniz. Lütfen ${nextAllowedUpdate.day}/${nextAllowedUpdate.month}/${nextAllowedUpdate.year} tarihinden sonra tekrar deneyin."
-        );
+      if (name.isEmpty) {
+        _showMessage("Eksik Bilgi", "Lutfen adinizi girin.");
         return;
       }
-    }
-    
-    setState(() {
-      _isSaving = true;
-    });
-    
-    try {
-      if (currentUser != null) {
-        Map<String, dynamic> userData = {
-          'email': userEmail,
-          'name': _nameController.text.trim(),
-          'surname': _surnameController.text.trim(),
-          'birthDate': selectedDate,
-          'city': selectedCity,
-          'school': selectedSchool,
-          'updatedAt': FieldValue.serverTimestamp(),
-        };
+      
+      if (surname.isEmpty) {
+        _showMessage("Eksik Bilgi", "Lutfen soyadinizi girin.");
+        return;
+      }
+      
+      if (selectedDate == null) {
+        _showMessage("Eksik Bilgi", "Lutfen dogum tarihinizi secin.");
+        return;
+      }
+      
+      if (selectedCity == null || selectedCity!.isEmpty) {
+        _showMessage("Eksik Bilgi", "Lutfen yasadiginiz ili secin.");
+        return;
+      }
+      
+      if (selectedSchool == null || selectedSchool!.isEmpty) {
+        _showMessage("Eksik Bilgi", "Lutfen okulunuzu secin.");
+        return;
+      }
 
-        // Firebase'e kaydet
-        await _firestore.collection('users').doc(currentUser!.uid).set(
-          userData,
-          SetOptions(merge: true)
+      // 6 aylik guncelleme kontrolu
+      if (lastUpdateTime != null) {
+        final now = DateTime.now();
+        final DateTime nextAllowedUpdate = DateTime(
+          lastUpdateTime!.year + ((lastUpdateTime!.month + 6) > 12 ? 1 : 0),
+          ((lastUpdateTime!.month + 6) % 12 == 0 ? 12 : (lastUpdateTime!.month + 6) % 12),
+          lastUpdateTime!.day,
         );
         
-        // Yerel depolamaya kaydet
-        await _localStorage.saveUserToSQLite({
-          'id': currentUser!.uid,
-          ...userData,
-        });
-        await _localStorage.saveUserToPrefs(userData);
-        
-        setState(() {
-          _isSaving = false;
-        });
-        
-        _showMessage("Başarılı", "Profil bilgileriniz başarıyla güncellendi.", onDismissed: () {
-          Navigator.pop(context);
-        });
-      } else {
-        setState(() {
-          _isSaving = false;
-        });
-        _showMessage("Hata", "Kullanıcı bilgisi bulunamadı.");
+        if (now.isBefore(nextAllowedUpdate)) {
+          _showMessage(
+            "Guncelleme Sinirlamasi", 
+            "Profil bilgilerinizi 6 ayda sadece bir kez guncelleyebilirsiniz. Lutfen ${nextAllowedUpdate.day}/${nextAllowedUpdate.month}/${nextAllowedUpdate.year} tarihinden sonra tekrar deneyin."
+          );
+          return;
+        }
       }
+
+      // Kullanici kontrolu
+      final user = _firebaseService.getCurrentUser();
+      if (user == null) {
+        _showMessage("Hata", "Kullanici bilgisi bulunamadi.");
+        return;
+      }
+
+      setState(() {
+        _isSaving = true;
+      });
+
+      // Verileri hazirla
+      Map<String, dynamic> userData = {
+        'email': user.email,
+        'name': name,
+        'surname': surname,
+        'birthDate': selectedDate,
+        'city': selectedCity,
+        'school': selectedSchool,
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+
+      // Firebase'e kaydet
+      await _firestore.collection('users').doc(user.uid).set(
+        userData,
+        SetOptions(merge: true)
+      );
+      
+      // Yerel depolamaya kaydet
+      await _localStorage.saveUserToSQLite({
+        'id': user.uid,
+        ...userData,
+      });
+      await _localStorage.saveUserToPrefs(userData);
+
+      // Guncel verileri al
+      final updatedDoc = await _firestore.collection('users').doc(user.uid).get();
+      if (updatedDoc.exists) {
+        final updatedData = updatedDoc.data() as Map<String, dynamic>;
+        _updateUIFromUserData(updatedData);
+      }
+
+      setState(() {
+        _isSaving = false;
+      });
+
+      _showMessage(
+        "Basarili", 
+        "Profil bilgileriniz basariyla guncellendi.",
+        onDismissed: () {
+          Navigator.pop(context);
+        }
+      );
+
     } catch (e) {
       setState(() {
         _isSaving = false;
       });
-      _showMessage("Hata", "Profil bilgileriniz güncellenirken bir hata oluştu.");
+      print('Profil guncelleme hatasi: $e');
+      _showMessage(
+        "Hata", 
+        "Profil bilgileriniz guncellenirken bir hata olustu. Lutfen tekrar deneyin."
+      );
     }
   }
   
@@ -329,8 +381,7 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
   Widget build(BuildContext context) {
     return BasePage(
       title: 'Profil Guncelle',
-      showSaveButton: true,
-      onSavePressed: _saveProfile,
+      showSaveButton: false,
       content: Stack(
         children: [
           _isLoading 

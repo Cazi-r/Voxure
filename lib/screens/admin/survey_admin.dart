@@ -5,6 +5,8 @@ import '../../widgets/base_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SurveyAdminPage extends StatefulWidget {
+  const SurveyAdminPage({Key? key}) : super(key: key);
+
   @override
   _SurveyAdminPageState createState() => _SurveyAdminPageState();
 }
@@ -45,7 +47,7 @@ class _SurveyAdminPageState extends State<SurveyAdminPage> {
   Widget build(BuildContext context) {
     return BasePage(
       title: 'Anket Yonetimi',
-      showSaveButton: true,
+      showSaveButton: false,
       onSavePressed: _saveSurvey,
       content: Stack(
         children: [
@@ -310,6 +312,45 @@ class _SurveyDialogState extends State<_SurveyDialog> {
   String _selectedColor = 'blue';
   bool _cityFilter = false;
   bool _schoolFilter = false;
+  String? _selectedCity;
+  String? _selectedSchool;
+
+  // Turkiye'deki illerin listesi
+  final List<String> cities = [
+    'Adana', 'Adiyaman', 'Afyonkarahisar', 'Agri', 'Aksaray', 'Amasya', 'Ankara', 'Antalya',
+    'Ardahan', 'Artvin', 'Aydin', 'Balikesir', 'Bartin', 'Batman', 'Bayburt', 'Bilecik',
+    'Bingol', 'Bitlis', 'Bolu', 'Burdur', 'Bursa', 'Canakkale', 'Cankiri', 'Corum',
+    'Denizli', 'Diyarbakir', 'Duzce', 'Edirne', 'Elazig', 'Erzincan', 'Erzurum', 'Eskisehir',
+    'Gaziantep', 'Giresun', 'Gumushane', 'Hakkari', 'Hatay', 'Igdir', 'Isparta', 'Istanbul',
+    'Izmir', 'Kahramanmaras', 'Karabuk', 'Karaman', 'Kars', 'Kastamonu', 'Kayseri', 'Kilis',
+    'Kirikkale', 'Kirklareli', 'Kirsehir', 'Kocaeli', 'Konya', 'Kutahya', 'Malatya', 'Manisa',
+    'Mardin', 'Mersin', 'Mugla', 'Mus', 'Nevsehir', 'Nigde', 'Ordu', 'Osmaniye',
+    'Rize', 'Sakarya', 'Samsun', 'Sanliurfa', 'Siirt', 'Sinop', 'Sivas', 'Sirnak',
+    'Tekirdag', 'Tokat', 'Trabzon', 'Tunceli', 'Usak', 'Van', 'Yalova', 'Yozgat', 'Zonguldak'
+  ];
+  
+  final List<String> schools = [
+    'Okumuyorum',
+    'Altinbas Universitesi',
+    'Bahcesehir Universitesi',
+    'Beykent Universitesi',
+    'Bogazici Universitesi',
+    'Galatasaray Universitesi',
+    'Isik Universitesi',
+    'Istanbul Kultur Universitesi',
+    'Istanbul Medipol Universitesi',
+    'Istanbul Sabahattin Zaim Universitesi',
+    'Istanbul Teknik Universitesi',
+    'Istanbul Ticaret Universitesi',
+    'Istanbul Universitesi',
+    'Koc Universitesi',
+    'Maltepe Universitesi',
+    'Marmara Universitesi',
+    'Ozyegin Universitesi',
+    'Sabanci Universitesi',
+    'Yildiz Teknik Universitesi',
+    'Diger'
+  ];
 
   @override
   void initState() {
@@ -326,18 +367,14 @@ class _SurveyDialogState extends State<_SurveyDialog> {
     _minAgeController = TextEditingController(
       text: survey?['minYas']?.toString(),
     );
-    _cityController = TextEditingController(
-      text: survey?['belirliIl'],
-    );
-    _schoolController = TextEditingController(
-      text: survey?['belirliOkul'],
-    );
     
     if (survey != null) {
       _selectedIcon = survey['ikon'] ?? 'poll';
       _selectedColor = survey['renk'] ?? 'blue';
       _cityFilter = survey['ilFiltresi'] ?? false;
       _schoolFilter = survey['okulFiltresi'] ?? false;
+      _selectedCity = survey['belirliIl'];
+      _selectedSchool = survey['belirliOkul'];
     }
   }
 
@@ -348,8 +385,6 @@ class _SurveyDialogState extends State<_SurveyDialog> {
       controller.dispose();
     }
     _minAgeController.dispose();
-    _cityController.dispose();
-    _schoolController.dispose();
     super.dispose();
   }
 
@@ -433,16 +468,32 @@ class _SurveyDialogState extends State<_SurveyDialog> {
                   Checkbox(
                     value: _cityFilter,
                     onChanged: (value) {
-                      setState(() => _cityFilter = value ?? false);
+                      setState(() {
+                        _cityFilter = value ?? false;
+                        if (!_cityFilter) {
+                          _selectedCity = null;
+                        }
+                      });
                     },
                   ),
                   Text('Il Filtresi'),
                 ],
               ),
               if (_cityFilter)
-                TextFormField(
-                  controller: _cityController,
-                  decoration: InputDecoration(labelText: 'Il'),
+                DropdownButtonFormField<String>(
+                  value: _selectedCity,
+                  decoration: InputDecoration(labelText: 'Il Secin'),
+                  items: cities.map((String city) {
+                    return DropdownMenuItem<String>(
+                      value: city,
+                      child: Text(city),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      _selectedCity = newValue;
+                    });
+                  },
                 ),
               SizedBox(height: 8),
               Row(
@@ -450,16 +501,62 @@ class _SurveyDialogState extends State<_SurveyDialog> {
                   Checkbox(
                     value: _schoolFilter,
                     onChanged: (value) {
-                      setState(() => _schoolFilter = value ?? false);
+                      setState(() {
+                        _schoolFilter = value ?? false;
+                        if (!_schoolFilter) {
+                          _selectedSchool = null;
+                        }
+                      });
                     },
                   ),
                   Text('Okul Filtresi'),
                 ],
               ),
               if (_schoolFilter)
-                TextFormField(
-                  controller: _schoolController,
-                  decoration: InputDecoration(labelText: 'Okul'),
+                DropdownButtonFormField<String>(
+                  value: _selectedSchool,
+                  decoration: InputDecoration(labelText: 'Okul Secin'),
+                  items: schools.map((String school) {
+                    return DropdownMenuItem<String>(
+                      value: school,
+                      child: Text(
+                        school,
+                        style: TextStyle(
+                          fontWeight: FontWeight.normal,
+                          fontSize: 15,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      _selectedSchool = newValue;
+                    });
+                  },
+                  selectedItemBuilder: (BuildContext context) {
+                    return schools.map<Widget>((String school) {
+                      return Row(
+                        children: [
+                          Icon(Icons.school, color: Color(0xFF5181BE), size: 20),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              school,
+                              style: TextStyle(
+                                fontWeight: FontWeight.normal,
+                                fontSize: 15,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          ),
+                        ],
+                      );
+                    }).toList();
+                  },
+                  isExpanded: true,
                 ),
               SizedBox(height: 16),
               DropdownButtonFormField<String>(
@@ -513,9 +610,9 @@ class _SurveyDialogState extends State<_SurveyDialog> {
                 'renk': _selectedColor,
                 'minYas': int.tryParse(_minAgeController.text),
                 'ilFiltresi': _cityFilter,
-                'belirliIl': _cityFilter ? _cityController.text : null,
+                'belirliIl': _cityFilter ? _selectedCity : null,
                 'okulFiltresi': _schoolFilter,
-                'belirliOkul': _schoolFilter ? _schoolController.text : null,
+                'belirliOkul': _schoolFilter ? _selectedSchool : null,
               };
               Navigator.pop(context, surveyData);
             }
