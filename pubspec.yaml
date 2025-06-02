@@ -36,6 +36,7 @@ dependencies:
   cloud_firestore: ^4.13.6
   firebase_storage: ^11.5.6
   google_sign_in: ^6.2.1
+  flutter_web_auth_2: ^3.0.0 # GitHub OAuth icin eklendi
   supabase_flutter: ^2.0.2
   uuid: ^4.5.1
   
@@ -55,7 +56,6 @@ dependencies:
   flutter_svg: ^2.0.10+1
   google_fonts: ^6.2.1
   fl_chart: ^0.66.2
-  url_launcher: ^6.2.5
 
 dev_dependencies:
   flutter_test:
@@ -117,3 +117,4 @@ flutter_icons:
   remove_alpha_ios: true  # iOS icin alpha kanali kaldirir
 
 dependency_overrides:
+  flutter_web_auth_2: ^4.0.0

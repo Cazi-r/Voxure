@@ -17,10 +17,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -36,10 +33,7 @@ class DefaultFirebaseOptions {
           'you can reconfigure this by running the FlutterFire CLI again.',
         );
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return windows;
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -59,4 +53,25 @@ class DefaultFirebaseOptions {
     projectId: 'voxure-app',
     storageBucket: 'voxure-app.firebasestorage.app',
   );
+
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyDr2uRykZtWAdV_yGGXzXo2qjENB50CuJo',
+    appId: '1:375193215607:web:130f3b33bd1d77dedc9c72',
+    messagingSenderId: '375193215607',
+    projectId: 'voxure-app',
+    authDomain: 'voxure-app.firebaseapp.com',
+    storageBucket: 'voxure-app.firebasestorage.app',
+    measurementId: 'G-0W0Y7NE1C1',
+  );
+
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyDr2uRykZtWAdV_yGGXzXo2qjENB50CuJo',
+    appId: '1:375193215607:web:89696cc6866aabcbdc9c72',
+    messagingSenderId: '375193215607',
+    projectId: 'voxure-app',
+    authDomain: 'voxure-app.firebaseapp.com',
+    storageBucket: 'voxure-app.firebasestorage.app',
+    measurementId: 'G-NQXZYM7Z3J',
+  );
+
 }
