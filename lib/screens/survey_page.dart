@@ -150,17 +150,23 @@ class SurveyPageState extends State<SurveyPage> {
     
     final survey = surveys[surveyIndex];
     
-    // Anket kilitli ise veya daha once oy verilmisse islemi iptal et
-    if (survey['kilitlendi'] == true || survey['oyVerildi'] == true) {
+    // Anket kilitli ise islemi iptal et
+    if (survey['kilitlendi'] == true) {
       return;
     }
     
     setState(() {
-      // Secimi guncelle
+      // Eger daha once farkli bir secenege oy verildiyse, o oyu geri al
+      if (survey['oyVerildi'] == true && survey['secilenSecenek'] != optionIndex) {
+        int eskiSecenek = survey['secilenSecenek'];
+        survey['oylar'][eskiSecenek]--;
+      }
+      
+      // Yeni secimi guncelle
       survey['oyVerildi'] = true;
       survey['secilenSecenek'] = optionIndex;
       
-      // Oy sayisini artir
+      // Oy sayisini guncelle
       if (survey['oylar'] == null) {
         survey['oylar'] = List<int>.filled(survey['secenekler'].length, 0);
       }
