@@ -189,7 +189,7 @@ Asagida, Cloud Firestore'da bir kullanicinin nasil saklandigini gosteren bir orn
 
 ## Grup Uyelerinin Projeye Katkisi
 
-* Yusuf Erdodu:
+* Yusuf Erdoğdu:
   * Ana sayfa (home_page.dart)
   * Anketler ekrani (survey_page.dart)
   * Istatistikler ekrani (statistics_page.dart)
@@ -202,7 +202,7 @@ Asagida, Cloud Firestore'da bir kullanicinin nasil saklandigini gosteren bir orn
   * Kayit ol ekrani (register_page.dart)
   * Drawer (custom_drawer.dart)
 
-* Furkan Yilmaz:
+* Furkan Yılmaz:
   * Profil guncelleme ekrani (profile_update_page.dart)
   * Yeni anket ekle ekrani (survey_admin.dart)
   * Supabase yapilandirmasi
