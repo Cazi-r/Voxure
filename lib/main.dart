@@ -14,7 +14,16 @@ import 'services/local_storage_service.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide User;
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth show User;
 
+// Global key for app state
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+// Global function to restart app
+void restartApp() {
+  runApp(MyApp());
+}
 
 void main() async {
   // Flutter widget bağlamını başlat
@@ -51,6 +60,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'Voxure',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
@@ -71,8 +81,8 @@ class MyApp extends StatelessWidget {
       ],
       // Varsayılan dil
       locale: const Locale('tr', 'TR'),
-      home: StreamBuilder(
-        stream: _authService.authStateChanges,
+      home: StreamBuilder<firebase_auth.User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Scaffold(
@@ -81,12 +91,22 @@ class MyApp extends StatelessWidget {
               ),
             );
           }
-          
-          if (snapshot.hasData) {
-            return HomePage();
+
+          // Hata durumunda login sayfasına yönlendir
+          if (snapshot.hasError) {
+            print('Auth state error: ${snapshot.error}');
+            return LoginPage();
           }
           
-          return LoginPage();
+          // Kullanıcı varsa ana sayfaya, yoksa login sayfasına yönlendir
+          final user = snapshot.data;
+          if (user != null) {
+            print('User is signed in: ${user.email}');
+            return HomePage();
+          } else {
+            print('No user signed in');
+            return LoginPage();
+          }
         },
       ),
       routes: {
@@ -96,6 +116,7 @@ class MyApp extends StatelessWidget {
         '/profile_update': (context) => ProfileUpdatePage(),
         '/admin/survey': (context) => SurveyAdminPage(),
         '/register': (context) => RegisterPage(),
+        '/login': (context) => LoginPage(),
       },
     );
   }

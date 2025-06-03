@@ -54,6 +54,7 @@
 			<array>
 				<string>voxureauth</string>
 				<string>REVERSED_CLIENT_ID_FROM_GOOGLESERVICE-INFO.PLIST</string>
+				<string>com.voxure.app</string>
 			</array>
 		</dict>
 	</array>
