@@ -7,30 +7,46 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/custom_app_bar.dart';
 
+/*
+ * Profil Güncelleme Sayfası (ProfileUpdatePage)
+ * 
+ * Bu sayfa, kullanıcıların profil bilgilerini güncellemesi için aşağıdaki özellikleri sunar:
+ * - Ad ve soyad güncelleme
+ * - Doğum tarihi seçimi ve yaş hesaplama
+ * - Şehir seçimi (Türkiye illeri)
+ * - Okul seçimi (Yaşa göre filtrelenen liste)
+ * - Verilerin yerel depolama ve Firebase'de saklanması
+ * - Çevrimdışı çalışabilme özelliği
+ */
+
 class ProfileUpdatePage extends StatefulWidget {
   @override
   State<ProfileUpdatePage> createState() => _ProfileUpdatePageState();
 }
 
 class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
+  // Servis sınıfları
   final FirebaseService _firebaseService = FirebaseService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final LocalStorageService _localStorage = LocalStorageService();
   
+  // Kullanıcı bilgileri
   User? currentUser;
   String? userEmail;
   
+  // Form kontrolcüleri
   TextEditingController _nameController = TextEditingController();
   TextEditingController _surnameController = TextEditingController();
   
+  // Seçilen değerler
   String? selectedCity;
   String? selectedSchool;
   DateTime? selectedDate;
   int? _age;
   
+  // Sayfa durumu
   bool _isLoading = false;
   bool _isSaving = false;
-  
   DateTime? lastUpdateTime;
   
   // Türkiye'deki illerin listesi
@@ -78,7 +94,9 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
     return schools;
   }
   
-  // Kullanıcının yaşını hesaplama
+  /// Kullanıcının yaşını hesaplayan metot
+  /// Seçilen doğum tarihine göre yaşı hesaplar ve
+  /// 18 yaşından küçükse okul seçimini "Okumuyorum" olarak ayarlar
   void _calculateAge() {
     if (selectedDate != null) {
       final DateTime now = DateTime.now();
@@ -89,7 +107,7 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
       }
       setState(() {
         _age = age;
-        // Eğer 18 yaşından küçükse ve üniversite seçiliyse, otomatik olarak "Okumuyorum" yap
+        // 18 yaşından küçükse okul seçimini otomatik olarak "Okumuyorum" yap
         if (_age! < 18 && selectedSchool != 'Okumuyorum') {
           selectedSchool = 'Okumuyorum';
         }
@@ -119,6 +137,9 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
     await _localStorage.init();
   }
   
+  /// Kullanıcı bilgilerini yükler
+  /// Önce yerel depolamadan, sonra Firebase'den veri çeker
+  /// Çevrimdışı çalışabilme için her iki kaynağı da kullanır
   Future<void> _loadUserInfo() async {
     if (mounted) {
       setState(() {
@@ -127,7 +148,7 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
     }
     
     try {
-      // Kullanici kontrolu
+      // Kullanıcı oturumunu kontrol et
       final user = _firebaseService.getCurrentUser();
       if (user == null) {
         throw Exception("Kullanici oturumu bulunamadi");
@@ -135,7 +156,7 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
 
       userEmail = user.email;
       
-      // Yerel depolamadan veri yukleme
+      // Önce yerel depolamadan veri yüklemeyi dene
       Map<String, dynamic>? localUserData;
       try {
         localUserData = await _localStorage.getUserFromSQLite(user.uid);
@@ -146,7 +167,7 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
         print('Yerel depolama okuma hatasi: $e');
       }
       
-      // Firebase'den veri yukleme
+      // Firebase'den veri yüklemeyi dene
       try {
         DocumentSnapshot userDoc = await _firestore
             .collection('users')
@@ -156,7 +177,7 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
         if (userDoc.exists) {
           Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
           
-          // Yerel depolamaya kaydet
+          // Verileri yerel depolamaya kaydet
           await _localStorage.saveUserToSQLite({
             'id': user.uid,
             ...userData,
@@ -166,12 +187,10 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
           if (mounted) {
             _updateUIFromUserData(userData);
           }
-        } else {
-          print('Kullanici verisi bulunamadi');
         }
       } catch (e) {
         print('Firebase veri okuma hatasi: $e');
-        // Eger yerel veri varsa onunla devam et, yoksa hatayi goster
+        // Firebase'e erişilemezse ve yerel veri varsa onunla devam et
         if (localUserData == null) {
           throw e;
         }
@@ -228,12 +247,17 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
     }
   }
   
+  /// Profil bilgilerini kaydeder
+  /// - Form validasyonu yapar
+  /// - 6 aylık güncelleme kontrolü yapar
+  /// - Firebase ve yerel depolamaya kaydeder
   Future<void> _saveProfile() async {
     try {
       // Form validasyonu
       String name = _nameController.text.trim();
       String surname = _surnameController.text.trim();
       
+      // Zorunlu alan kontrolü
       if (name.isEmpty) {
         _showMessage("Eksik Bilgi", "Lutfen adinizi girin.");
         return;
@@ -259,7 +283,7 @@ class _ProfileUpdatePageState extends State<ProfileUpdatePage> {
         return;
       }
 
-      // 6 aylik guncelleme kontrolu
+      // 6 aylık güncelleme kontrolü
       if (lastUpdateTime != null) {
         final now = DateTime.now();
         final DateTime nextAllowedUpdate = DateTime(

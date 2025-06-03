@@ -5,6 +5,17 @@ import '../services/supabase_service.dart';
 import '../widgets/base_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+/*
+ * İstatistikler Sayfası (StatisticsPage)
+ * 
+ * Bu sayfa, anketlerin oy istatistiklerini görselleştirmek için aşağıdaki özellikleri sunar:
+ * - Anket sorularının listelenmesi
+ * - Her seçenek için oy sayıları ve yüzdeleri
+ * - Görsel grafikler ve ilerleme çubukları
+ * - Yenileme özelliği
+ * - Boş durum gösterimi
+ */
+
 /// StatisticsPage: Anketlerin oy istatistiklerini gösteren sayfa.
 ///
 /// Bu sayfa, Firebase'de kaydedilmiş oy verilerini görselleştirir
@@ -15,13 +26,13 @@ class StatisticsPage extends StatefulWidget {
 }
 
 class StatisticsPageState extends State<StatisticsPage> {
-  // Servisler
+  // Supabase veritabanı servisi
   final SupabaseService _supabaseService = SupabaseService(Supabase.instance.client);
   
-  // Veriler yükleniyor mu?
+  // Sayfa durumu
   bool isLoading = true;
   
-  // Anket verileri listesi
+  // Anket verileri
   List<Map<String, dynamic>> surveys = [];
 
   @override
@@ -37,14 +48,14 @@ class StatisticsPageState extends State<StatisticsPage> {
     });
 
     try {
-      // Supabase'den anketleri yukle
+      // Önce Supabase'den tüm anketleri getir
       List<Map<String, dynamic>> loadedSurveys = await _supabaseService.getSurveys();
       
       setState(() {
         surveys = loadedSurveys;
       });
       
-      // Oy verilerini yükle
+      // Anketler yüklendikten sonra her anket için oy verilerini al
       await loadVoteData();
     } catch (e) {
       print('Anketleri yükleken hata: $e');
@@ -54,19 +65,20 @@ class StatisticsPageState extends State<StatisticsPage> {
     }
   }
 
-  /// Oy verilerini yükle
+  /// Her anket için oy verilerini yükler ve işler
   Future<void> loadVoteData() async {
     try {
+      // Her anket için ayrı ayrı oy verilerini al
       for (int i = 0; i < surveys.length; i++) {
         String surveyId = surveys[i]['id'];
         
-        // Bu anket için oy verilerini al
+        // Bu anket için oy verilerini Supabase'den getir
         Map<int, int> voteData = await _supabaseService.getSurveyVotes(surveyId);
         
-        // Oy sayılarını sıfırla
+        // Her seçenek için oy sayılarını sıfırla
         List<int> newVotes = List<int>.filled(surveys[i]['secenekler'].length, 0);
         
-        // Oy verilerini işle
+        // Gelen oy verilerini işle ve seçeneklere dağıt
         voteData.forEach((optionIndex, count) {
           if (optionIndex >= 0 && optionIndex < newVotes.length) {
             newVotes[optionIndex] = count;
@@ -79,12 +91,9 @@ class StatisticsPageState extends State<StatisticsPage> {
             surveys[i]['oylar'] = newVotes;
           });
         }
-
-        print('Anket $surveyId icin islenen oylar: $newVotes');
       }
     } catch (e) {
-      print('Oy verileri yükleirken hata: $e');
-      // Hata durumunda sessizce devam et
+      print('Oy verileri yüklenirken hata: $e');
     } finally {
       if (mounted) {
         setState(() {
@@ -158,6 +167,10 @@ class StatisticsPageState extends State<StatisticsPage> {
   }
 
   /// İstatistik kartını oluşturan widget metodu
+  /// Bu metot her anket için bir kart oluşturur ve içinde:
+  /// - Anket sorusunu
+  /// - Toplam oy sayısını
+  /// - Her seçenek için oy yüzdelerini ve çubuk grafiğini gösterir
   Widget createStatisticsCard(int surveyIndex) {
     Map<String, dynamic> survey = surveys[surveyIndex];
     Color surveyColor = _getColorFromValue(survey['renk']) ?? Colors.blue;
@@ -215,6 +228,10 @@ class StatisticsPageState extends State<StatisticsPage> {
   }
 
   /// Seçenek sonuçlarını oluşturan metot
+  /// Her seçenek için:
+  /// - Seçenek adını
+  /// - Aldığı oy sayısını ve yüzdesini
+  /// - Yüzdeyi gösteren bir ilerleme çubuğunu oluşturur
   List<Widget> createOptionResults(
       Map<String, dynamic> survey, int totalVotes) {
     List<Widget> results = [];

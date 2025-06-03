@@ -7,6 +7,17 @@ import '../widgets/base_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/*
+ * Anket Sayfası (SurveyPage)
+ * 
+ * Bu sayfa, kullanıcıların anketlere katılması için aşağıdaki özellikleri sunar:
+ * - Kullanıcı profiline göre filtrelenmiş anketlerin listelenmesi
+ * - Yaş, şehir ve okul bazlı anket filtreleme
+ * - Oy verme ve oy değiştirme
+ * - Oy sonuçlarının anlık gösterimi
+ * - Profil bilgisi eksikse hatırlatma mesajı
+ */
+
 /// SurveyPage: Kullanıcının anketlere oy verebildiği sayfa.
 ///
 /// Bu sayfa kullanıcı profiline göre filtrelenmiş anketleri gösterir
@@ -17,17 +28,17 @@ class SurveyPage extends StatefulWidget {
 }
 
 class SurveyPageState extends State<SurveyPage> {
-  // Servisler
+  // Supabase veritabanı servisi
   final SupabaseService _supabaseService = SupabaseService(Supabase.instance.client);
 
   
-  // Kullanıcı bilgileri
+  // Kullanıcı profil bilgileri
   String? userId;
   int? userAge;
   String? userCity;
   String? userSchool;
   
-  // Anket verileri
+  // Anket verileri ve sayfa durumu
   List<Map<String, dynamic>> surveys = [];
   bool isLoading = true;
 
@@ -37,20 +48,20 @@ class SurveyPageState extends State<SurveyPage> {
     _loadUserData();
   }
 
-  /// Kullanıcı bilgilerini yükler
+  /// Kullanıcı bilgilerini yükler ve profil durumunu kontrol eder
   Future<void> _loadUserData() async {
     setState(() {
       isLoading = true;
     });
 
     try {
-      // Mevcut kullanıcı bilgilerini al
+      // Firebase'den mevcut kullanıcı bilgilerini al
       firebase_auth.User? currentUser = firebase_auth.FirebaseAuth.instance.currentUser;
       
       if (currentUser != null) {
         userId = currentUser.uid;
 
-        // Firestore'dan kullanici bilgilerini cek
+        // Firestore'dan kullanıcının profil bilgilerini getir
         final userDoc = await FirebaseFirestore.instance
             .collection('users')
             .doc(currentUser.uid)
@@ -58,7 +69,8 @@ class SurveyPageState extends State<SurveyPage> {
 
         if (userDoc.exists) {
           final data = userDoc.data()!;
-          // birthDate alanindan yas hesapla
+          
+          // Doğum tarihinden yaş hesaplama
           DateTime? birthDate;
           if (data['birthDate'] != null) {
             birthDate = (data['birthDate'] as Timestamp).toDate();
@@ -71,6 +83,8 @@ class SurveyPageState extends State<SurveyPage> {
               calculatedAge--;
             }
           }
+          
+          // Kullanıcı bilgilerini state'e kaydet
           setState(() {
             userAge = calculatedAge;
             userCity = data['city'];
@@ -78,11 +92,9 @@ class SurveyPageState extends State<SurveyPage> {
           });
         }
 
-        // Anketleri yükle
+        // Kullanıcı bilgileri yüklendikten sonra anketleri getir
         await _loadSurveys();
       }
-
-      print("Kullanici Firestore verisi: age=$userAge, city=$userCity, school=$userSchool");
     } catch (e) {
       print('Kullanici bilgileri yuklenirken hata: $e');
     } finally {
@@ -175,18 +187,22 @@ class SurveyPageState extends State<SurveyPage> {
   }
 
   /// Anketin kullanıcıya gösterilip gösterilmeyeceğini kontrol eder
+  /// Aşağıdaki kriterlere göre filtreleme yapar:
+  /// - Yaş sınırı kontrolü
+  /// - İl bazlı filtreleme
+  /// - Okul bazlı filtreleme
   bool shouldShowSurvey(Map<String, dynamic> survey) {
-    // Yaş kontrolü
+    // Yaş kontrolü - Minimum yaş şartını sağlamıyorsa anketi gösterme
     if (userAge != null && survey['minYas'] != null && userAge! < survey['minYas']) {
       return false;
     }
     
-    // İl kontrolü
+    // İl kontrolü - İl filtresi aktifse ve kullanıcının ili yoksa anketi gösterme
     if (survey['ilFiltresi'] == true && (userCity == null || userCity!.isEmpty)) {
       return false;
     }
     
-    // Belirli bir il için filtreleme
+    // Belirli bir il için filtreleme - Anket belirli bir il için ise ve kullanıcı o ilde değilse gösterme
     if (survey['belirliIl'] != null) {
       String belirliIl = survey['belirliIl'];
       if (userCity != belirliIl) {
@@ -194,9 +210,8 @@ class SurveyPageState extends State<SurveyPage> {
       }
     }
     
-    // Okul kontrolü
+    // Okul kontrolü - Okul filtresi aktifse ve kullanıcı okumuyorsa anketi gösterme
     if (survey['okulFiltresi'] == true) {
-      // Okul bilgisi yoksa veya "Okumuyorum" ise anketi gösterme
       if (userSchool == null || userSchool!.isEmpty || userSchool == 'Okumuyorum') {
         return false;
       }

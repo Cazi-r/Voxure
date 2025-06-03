@@ -1,3 +1,6 @@
+// Bu servis, kullanıcı kimlik doğrulama işlemlerini yönetir.
+// Google ve GitHub ile giriş yapma, çıkış yapma ve kullanıcı durumu takibi gibi işlemleri gerçekleştirir.
+
 import 'package:firebase_auth/firebase_auth.dart' hide User;
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth show User;
 import 'package:google_sign_in/google_sign_in.dart';
@@ -9,19 +12,24 @@ import 'github_oauth_service.dart';
 import '../main.dart';
 
 class AuthService {
+  // Firebase kimlik doğrulama örneği
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  
+  // Google giriş servisi yapılandırması
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: ['email', 'profile'],
     signInOption: SignInOption.standard,
     hostedDomain: '',  // tüm domainlere izin ver
     clientId: '',      // Android için gerekli değil
   );
+  
+  // GitHub OAuth servisi örneği
   final GitHubOAuthService _githubOAuthService = GitHubOAuthService();
 
-  // Mevcut kullanici durumunu izle
+  // Kullanıcının oturum durumundaki değişiklikleri dinle
   Stream<firebase_auth.User?> get authStateChanges => _auth.authStateChanges();
 
-  // Google ile giris yap
+  // Google ile giriş yapma işlemi
   Future<UserCredential?> signInWithGoogle() async {
     try {
       // Önce mevcut hesaptan çıkış yap
@@ -59,7 +67,7 @@ class AuthService {
     }
   }
 
-  // GitHub ile giriş yap
+  // GitHub ile giriş yapma işlemi
   Future<UserCredential?> signInWithGithub() async {
     try {
       print('GitHub giris basladi');
@@ -70,7 +78,7 @@ class AuthService {
     }
   }
 
-  // Cikis yap
+  // Tüm servislerden çıkış yapma işlemi
   Future<void> signOut() async {
     try {
       print('AuthService: Cikis islemi baslatiliyor...');

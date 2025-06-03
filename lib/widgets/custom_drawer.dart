@@ -1,3 +1,6 @@
+// Bu widget, uygulama genelinde kullanılan özelleştirilmiş yan menüyü oluşturur.
+// Kullanıcı profili, navigasyon menüsü ve çıkış işlemlerini yönetir.
+
 import 'package:flutter/material.dart';
 import '../services/firebase_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -11,18 +14,22 @@ class CustomDrawer extends StatefulWidget {
 }
 
 class _CustomDrawerState extends State<CustomDrawer> {
+  // Servis örnekleri
   final FirebaseService _firebaseService = FirebaseService();
   final SupabaseService _supabaseService = SupabaseService(Supabase.instance.client);
   final AuthService _authService = AuthService();
-  String? _logoUrl;
-  bool _isLoggingOut = false;
+  
+  // Durum değişkenleri
+  String? _logoUrl;                    // Uygulama logosu URL'i
+  bool _isLoggingOut = false;          // Çıkış işlemi durumu
 
   @override
   void initState() {
     super.initState();
-    _loadLogo();
+    _loadLogo();  // Widget oluşturulduğunda logoyu yükle
   }
 
+  // Uygulama logosunu yükleme
   Future<void> _loadLogo() async {
     try {
       final logoUrl = await _supabaseService.getAppLogo();
@@ -36,13 +43,15 @@ class _CustomDrawerState extends State<CustomDrawer> {
     }
   }
 
+  // Sayfa yönlendirme işlemi
   void _navigate(BuildContext context, String route) {
-    Navigator.pop(context);
-    if (ModalRoute.of(context)?.settings.name != route) {
+    Navigator.pop(context);  // Drawer'ı kapat
+    if (ModalRoute.of(context)?.settings.name != route) {  // Aynı sayfada değilsek yönlendir
       Navigator.pushReplacementNamed(context, route);
     }
   }
 
+  // Çıkış işlemini gerçekleştirme
   Future<void> _handleLogout(BuildContext context) async {
     print('CustomDrawer: Cikis islemi baslatiliyor...');
     try {
@@ -110,6 +119,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
     }
   }
 
+  // Çıkış onay dialogunu gösterme
   void _logout(BuildContext context) {
     print('CustomDrawer: Cikis dialog\'u gosteriliyor');
     if (_isLoggingOut) {
@@ -119,14 +129,15 @@ class _CustomDrawerState extends State<CustomDrawer> {
 
     showDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: false,  // Dialog dışına tıklayarak kapatmayı engelle
       builder: (BuildContext dialogContext) {
         return WillPopScope(
-          onWillPop: () async => !_isLoggingOut,
+          onWillPop: () async => !_isLoggingOut,  // Çıkış sırasında geri tuşunu devre dışı bırak
           child: AlertDialog(
             title: const Text('Cikis'),
             content: const Text('Cikmak istediginize emin misiniz?'),
             actions: [
+              // İptal butonu
               TextButton(
                 onPressed: _isLoggingOut 
                   ? null 
@@ -136,6 +147,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                     },
                 child: const Text('Iptal'),
               ),
+              // Onay butonu
               TextButton(
                 onPressed: _isLoggingOut
                   ? null
@@ -164,7 +176,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
 
   @override
   Widget build(BuildContext context) {
-    // Admin kontrolu icin kullanici bilgilerini al
+    // Kullanıcı ve admin kontrolü
     final currentUser = _firebaseService.getCurrentUser();
     final String? userId = currentUser?.uid;
     final String? userEmail = currentUser?.email;
@@ -174,7 +186,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
       tcKimlik = userEmail.split('@')[0];
     }
     
-    // Admin UID kontrolu
+    // Admin yetkisi kontrolü
     const String adminUserId = "RSoZIw4KBRRbVmcwMfYvzSzNtqA2";
     bool isAdmin = (userId == adminUserId);
 
@@ -182,12 +194,14 @@ class _CustomDrawerState extends State<CustomDrawer> {
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
+          // Üst bölüm (Header)
           Container(
             color: Color(0xFF5181BE),
             child: Column(
               children: [
-                SizedBox(height: 50), // Status bar icin bosluk
-                // Logo
+                SizedBox(height: 50),  // Status bar için boşluk
+                
+                // Logo alanı
                 if (_logoUrl != null)
                   Padding(
                     padding: EdgeInsets.symmetric(vertical: 20),
@@ -216,7 +230,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
                     padding: EdgeInsets.symmetric(vertical: 20),
                     child: Icon(Icons.account_circle, size: 100, color: Colors.white),
                   ),
-                // Kullanici bilgileri
+                
+                // Kullanıcı e-posta bilgisi
                 Padding(
                   padding: EdgeInsets.only(bottom: 20),
                   child: Text(
@@ -229,6 +244,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
             ),
           ),
           
+          // Ana menü öğeleri
           ListTile(
             leading: Icon(Icons.home, color: Color(0xFF5181BE)),
             title: Text('Ana Sayfa'),
@@ -247,6 +263,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
             onTap: () => _navigate(context, '/statistics'),
           ),
           
+          // Admin menüsü (sadece admin kullanıcılar için)
           if (isAdmin)
             ListTile(
               leading: Icon(Icons.admin_panel_settings, color: Colors.purple),
@@ -256,6 +273,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
           
           const Divider(),
           
+          // Alt menü öğeleri
           ListTile(
             leading: Icon(Icons.person_outline, color: Color(0xFF5181BE)),
             title: Text('Profil Bilgilerim'),

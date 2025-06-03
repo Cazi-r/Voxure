@@ -1,12 +1,16 @@
+// Bu servis, Supabase veritabanı işlemlerini yönetir.
+// Anket yönetimi, oy verme işlemleri ve logo yönetimi gibi temel işlevleri sağlar.
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:io';
 
 class SupabaseService {
+  // Supabase istemci örneği
   final SupabaseClient _supabase;
 
   SupabaseService(this._supabase);
 
-  // Anketleri getir
+  // Tüm anketleri veritabanından getirme
   Future<List<Map<String, dynamic>>> getSurveys() async {
     try {
       final response = await _supabase
@@ -20,7 +24,7 @@ class SupabaseService {
     }
   }
 
-  // Belirli bir anketi getir
+  // Belirli bir anketin detaylarını getirme
   Future<Map<String, dynamic>?> getSurvey(String surveyId) async {
     try {
       final response = await _supabase
@@ -36,7 +40,7 @@ class SupabaseService {
     }
   }
 
-  // Yeni anket ekle
+  // Veritabanına yeni bir anket ekleme
   Future<String?> addSurvey(Map<String, dynamic> survey) async {
     try {
       final response = await _supabase
@@ -51,7 +55,7 @@ class SupabaseService {
     }
   }
 
-  // Anketi guncelle
+  // Mevcut bir anketin bilgilerini güncelleme
   Future<bool> updateSurvey(String surveyId, Map<String, dynamic> data) async {
     try {
       await _supabase
@@ -66,10 +70,10 @@ class SupabaseService {
     }
   }
 
-  // Oy kullan
+  // Bir ankete oy verme ve mükerrer oy kontrolü
   Future<bool> saveVote(Map<String, dynamic> voteData) async {
     try {
-      // Kullanicinin daha once oy verip vermedigini kontrol et
+      // Mükerrer oy kontrolü
       final existingVote = await _supabase
           .from('votes')
           .select()
@@ -81,7 +85,7 @@ class SupabaseService {
         return false;
       }
 
-      // Yeni oyu kaydet
+      // Yeni oyu veritabanına kaydet
       await _supabase
           .from('votes')
           .insert({
@@ -91,7 +95,7 @@ class SupabaseService {
             'created_at': DateTime.now().toIso8601String(),
           });
 
-      // Anketin oy sayisini guncelle
+      // Anketin toplam oy sayısını güncelle (stored procedure kullanarak)
       await _supabase.rpc(
         'increment_survey_vote',
         params: {
@@ -107,7 +111,7 @@ class SupabaseService {
     }
   }
 
-  // Toplu oy kaydetme
+  // Birden fazla oyu toplu olarak kaydetme
   Future<bool> saveBulkVotes(List<Map<String, dynamic>> votesData) async {
     try {
       bool allSuccessful = true;
@@ -124,7 +128,7 @@ class SupabaseService {
     }
   }
 
-  // Bir anketin oy verilerini getirir
+  // Bir anketin oy istatistiklerini getirme
   Future<Map<int, int>> getSurveyVotes(String surveyId) async {
     try {
       final response = await _supabase
@@ -151,7 +155,7 @@ class SupabaseService {
     }
   }
 
-  // Kullanicinin oyunu getir
+  // Bir kullanıcının belirli bir anketteki oyunu sorgulama
   Future<Map<String, dynamic>?> getUserVote(String userId, String surveyId) async {
     try {
       final response = await _supabase
@@ -174,7 +178,7 @@ class SupabaseService {
     }
   }
 
-  // Anketi sil
+  // Bir anketi veritabanından silme
   Future<bool> deleteSurvey(String surveyId) async {
     try {
       await _supabase
@@ -189,11 +193,12 @@ class SupabaseService {
     }
   }
 
-  // Logo yukleme
+  // Dosya sisteminden logo yükleme ve depolama
   Future<String?> uploadLogo(String filePath, String fileName) async {
     try {
       final bytes = await File(filePath).readAsBytes();
       
+      // Logo dosyasını Supabase depolama alanına yükle
       await _supabase
           .storage
           .from('logos')  // 'logos' bucket'ina yukle
@@ -206,7 +211,7 @@ class SupabaseService {
             ),
           );
       
-      // Logo URL'ini dondur
+      // Yüklenen logonun genel erişim URL'ini al
       final String publicUrl = _supabase
           .storage
           .from('logos')
@@ -219,7 +224,7 @@ class SupabaseService {
     }
   }
 
-  // Logo silme
+  // Depolama alanından logo silme
   Future<bool> deleteLogo(String fileName) async {
     try {
       await _supabase
@@ -234,7 +239,7 @@ class SupabaseService {
     }
   }
 
-  // Logo URL'ini getir
+  // Bir logonun genel erişim URL'ini alma
   String? getLogoUrl(String fileName) {
     try {
       return _supabase
@@ -247,7 +252,7 @@ class SupabaseService {
     }
   }
 
-  // Uygulama logosunu getir
+  // Uygulama ana logosunu veritabanından getirme
   Future<String?> getAppLogo() async {
     try {
       // 'app_settings' tablosundan logo URL'ini al

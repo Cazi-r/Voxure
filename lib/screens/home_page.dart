@@ -6,23 +6,33 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/base_page.dart';
 
+/*
+ * Ana Sayfa (HomePage)
+ * 
+ * Bu sayfa, uygulamanın ana ekranını oluşturur ve aşağıdaki özellikleri içerir:
+ * - Kullanıcı profil bilgilerinin gösterimi
+ * - Eksik profil bilgileri için uyarı mesajı
+ * - Hızlı erişim menüsü (Anketler, İstatistikler, Profil)
+ * - Oturum yönetimi
+ */
+
 class HomePage extends StatefulWidget {
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  // Firebase servisi
+  // Firebase servisi instance'ı
   final FirebaseService _firebaseService = FirebaseService();
-  // Firestore referansı
+  // Firestore veritabanı referansı
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  // Yükleniyor durumu
+  // Sayfa yüklenme durumu
   bool _isLoading = false;
-  // Kullanıcı bilgisi
+  // Aktif kullanıcı bilgisi
   User? currentUser;
-  // Profil bilgileri eksik mi?
+  // Kullanıcı profilinin eksik bilgi durumu
   bool _isProfileIncomplete = true;
-  // Kullanıcı ad soyadı
+  // Kullanıcının ad ve soyad bilgileri
   String? userName;
   String? userSurname;
 

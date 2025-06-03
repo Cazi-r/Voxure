@@ -6,20 +6,36 @@ import '../widgets/base_page.dart';
 import '../services/supabase_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+/*
+ * Kayıt Sayfası (RegisterPage)
+ * 
+ * Bu sayfa, yeni kullanıcıların uygulamaya kayıt olabilmesi için aşağıdaki özellikleri sunar:
+ * - E-posta ve şifre ile kayıt
+ * - Şifre doğrulama kontrolü
+ * - Basit kayıt bilgilendirmesi
+ * - Uygulama logosu gösterimi
+ * - Giriş sayfasına geri dönüş
+ */
+
 class RegisterPage extends StatefulWidget {
   @override
   State<RegisterPage> createState() => _RegisterPageState();
 }
 
 class _RegisterPageState extends State<RegisterPage> {
+  // Firebase ve Supabase servisleri
   final FirebaseService _firebaseService = FirebaseService();
   final SupabaseService _supabaseService = SupabaseService(Supabase.instance.client);
+  
+  // Logo URL'i
   String? _logoUrl;
   
+  // Form alanları için kontrolcüler
   final emailController = TextEditingController();
   final sifreController = TextEditingController();
   final sifreTekrarController = TextEditingController();
   
+  // Sayfa durumu ve yükleme mesajı
   bool _isLoading = false;
   String _loadingMessage = "Kayıt olunuyor...";
 

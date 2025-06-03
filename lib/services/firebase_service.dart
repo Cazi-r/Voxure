@@ -1,16 +1,20 @@
+// Bu servis, Firebase ile ilgili tüm işlemleri yönetir.
+// Kullanıcı kimlik doğrulama, anket oylama ve veri depolama işlemlerini gerçekleştirir.
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class FirebaseService {
+  // Firebase servislerinin örnekleri
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Singleton pattern
+  // Singleton tasarım deseni uygulaması
   static final FirebaseService _instance = FirebaseService._internal();
   factory FirebaseService() => _instance;
   FirebaseService._internal();
 
-  // Kullanıcı kayıt işlemi
+  // Yeni kullanıcı kaydı oluşturma ve gerekli kontrolleri yapma
   Future<Map<String, dynamic>> registerUser({
     required String email,
     required String sifre,
@@ -125,7 +129,7 @@ class FirebaseService {
     }
   }
   
-  // Kullanıcı giriş işlemi
+  // Mevcut kullanıcı girişi ve hata yönetimi
   Future<Map<String, dynamic>> loginUser({
     required String email,
     required String sifre,
@@ -179,7 +183,7 @@ class FirebaseService {
     }
   }
   
-  // Kullanıcı çıkış işlemi
+  // Kullanıcı oturumunu sonlandırma
   Future<Map<String, dynamic>> signOut() async {
     try {
       await _auth.signOut();
@@ -196,18 +200,18 @@ class FirebaseService {
     }
   }
   
-  // Kullanıcı kontrolü
+  // Kullanıcının oturum durumunu kontrol etme
   bool isUserLoggedIn() {
     final bool loggedIn = _auth.currentUser != null;
     return loggedIn;
   }
   
-  // Mevcut kullanıcıyı getir
+  // Aktif kullanıcı bilgilerini getirme
   User? getCurrentUser() {
     return _auth.currentUser;
   }
   
-  // Şifre sıfırlama
+  // Şifre sıfırlama e-postası gönderme
   Future<Map<String, dynamic>> resetPassword(String email) async {
     try {
       await _auth.sendPasswordResetEmail(
@@ -227,14 +231,14 @@ class FirebaseService {
     }
   }
 
-  // Oy verme islemi
+  // Anket için oy kaydetme ve mükerrer oy kontrolü
   Future<bool> saveVote(Map<String, dynamic> voteData) async {
     try {
       final String surveyId = voteData['surveyId'];
       final String userId = voteData['userId'];
       final int optionIndex = voteData['optionIndex'];
 
-      // Kullanicinin daha once oy verip vermedigini kontrol et
+      // Mükerrer oy kontrolü
       final userVoteDoc = await _firestore
           .collection('votes')
           .where('surveyId', isEqualTo: surveyId)
@@ -246,7 +250,7 @@ class FirebaseService {
         return false;
       }
 
-      // Yeni oyu kaydet
+      // Oyu veritabanına kaydet
       await _firestore.collection('votes').add({
         'surveyId': surveyId,
         'userId': userId,
@@ -254,7 +258,7 @@ class FirebaseService {
         'timestamp': FieldValue.serverTimestamp(),
       });
 
-      // Anketin oy sayisini guncelle
+      // Anket sonuçlarını güncelle (transaction ile tutarlılık sağlanır)
       final surveyRef = _firestore.collection('surveys').doc(surveyId);
       await _firestore.runTransaction((transaction) async {
         final surveyDoc = await transaction.get(surveyRef);
@@ -276,7 +280,7 @@ class FirebaseService {
     }
   }
 
-  // Toplu oy kaydetme
+  // Toplu oy kaydetme işlemi
   Future<bool> saveBulkVotes(List<Map<String, dynamic>> votesData) async {
     try {
       bool allSuccessful = true;
@@ -293,7 +297,7 @@ class FirebaseService {
     }
   }
 
-  // Anket oylarini getir
+  // Bir anketin oy dağılımını getirme
   Future<Map<int, int>> getSurveyVotes(String surveyId) async {
     try {
       final surveyDoc = await _firestore.collection('surveys').doc(surveyId).get();
@@ -318,7 +322,7 @@ class FirebaseService {
     }
   }
 
-  // Kullanicinin oyunu getir
+  // Belirli bir kullanıcının belirli bir anketteki oyunu getirme
   Future<Map<String, dynamic>?> getUserVote(String userId, String surveyId) async {
     try {
       final querySnapshot = await _firestore
@@ -343,7 +347,7 @@ class FirebaseService {
     }
   }
 
-  // Oy dogrulama
+  // Kullanıcının oyunun doğruluğunu kontrol etme
   Future<bool> verifyVote(Map<String, dynamic> voteData) async {
     final userId = voteData['userId'];
     final surveyId = voteData['surveyId'];

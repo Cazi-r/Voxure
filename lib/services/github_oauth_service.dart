@@ -1,3 +1,6 @@
+// Bu servis, GitHub OAuth kimlik doğrulama işlemlerini yönetir.
+// Web ve mobil platformlar için GitHub ile giriş yapma sürecini ve Firebase entegrasyonunu sağlar.
+
 import 'dart:convert';
 import 'dart:async';
 import 'package:http/http.dart' as http;
@@ -7,6 +10,7 @@ import 'package:flutter/foundation.dart';
 import 'package:app_links/app_links.dart';
 
 class GitHubOAuthService {
+  // GitHub OAuth yapılandırma bilgileri
   static const String clientId = 'Ov23lighZHKYkgHC2j3U';
   static const String clientSecret = 'b9a4b385bf061acede7c8f73c6926bbbc66e32c2';
   static const String redirectUri = kIsWeb 
@@ -14,13 +18,14 @@ class GitHubOAuthService {
       : 'voxure://oauth/callback';
   static const String scope = 'read:user user:email';
 
+  // Servis örnekleri
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final _appLinks = AppLinks();
   String? _currentState;
   StreamSubscription<Uri?>? _subscription;
   bool _isDisposed = false;
 
-  // Servisi temizle
+  // Servis kaynaklarını temizleme
   Future<void> dispose() async {
     _isDisposed = true;
     await _subscription?.cancel();
@@ -28,6 +33,7 @@ class GitHubOAuthService {
     _currentState = null;
   }
 
+  // GitHub ile giriş işlemini başlatma
   Future<UserCredential?> signIn() async {
     if (_isDisposed) {
       print('GitHubOAuthService is disposed');
@@ -35,6 +41,7 @@ class GitHubOAuthService {
     }
 
     try {
+      // Platform türüne göre uygun giriş yöntemini seç
       if (kIsWeb) {
         return await _handleWebSignIn();
       } else {
@@ -49,6 +56,7 @@ class GitHubOAuthService {
     }
   }
 
+  // Web platformu için GitHub giriş işlemi
   Future<UserCredential?> _handleWebSignIn() async {
     final authUrl = Uri.https('github.com', '/login/oauth/authorize', {
       'client_id': clientId,
@@ -57,7 +65,7 @@ class GitHubOAuthService {
       'state': _generateState(),
     });
 
-    // Web'de popup kullanarak OAuth akışını başlat
+    // Web'de popup veya yönlendirme ile giriş yap
     final provider = GithubAuthProvider();
     provider.addScope('read:user');
     provider.addScope('user:email');
@@ -66,12 +74,13 @@ class GitHubOAuthService {
       return await _auth.signInWithPopup(provider);
     } catch (e) {
       print('Web OAuth Error: $e');
-      // Popup başarısız olursa redirect dene
+      // Popup başarısız olursa yönlendirme ile dene
       await _auth.signInWithRedirect(provider);
       return await _auth.getRedirectResult();
     }
   }
 
+  // Mobil platform için GitHub giriş işlemi
   Future<UserCredential?> _handleMobileSignIn() async {
     // Cancel any existing subscription
     await _subscription?.cancel();
@@ -155,6 +164,7 @@ class GitHubOAuthService {
     return null;
   }
 
+  // GitHub'dan gelen OAuth yanıtını işleme
   Future<String?> _handleOAuthResponse(Uri uri, String expectedState) async {
     print('Handling OAuth response...');
     print('URI: $uri');
@@ -203,6 +213,7 @@ class GitHubOAuthService {
     return null;
   }
 
+  // GitHub access token'ı ile Firebase kimlik bilgisi oluşturma
   Future<OAuthCredential> _getFirebaseCredential(String accessToken) async {
     print('Getting Firebase credential for access token...');
     // GitHub API'den kullanıcı bilgilerini al
@@ -224,6 +235,7 @@ class GitHubOAuthService {
     return GithubAuthProvider.credential(accessToken);
   }
 
+  // Güvenlik için benzersiz durum değeri oluşturma
   String _generateState() {
     final random = List<int>.generate(32, (i) => DateTime.now().millisecondsSinceEpoch % 256);
     return base64Url.encode(random).replaceAll('=', '');

@@ -8,22 +8,33 @@ import '../widgets/base_page.dart';
 import '../services/supabase_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+/*
+ * Giriş Sayfası (LoginPage)
+ * 
+ * Bu sayfa, kullanıcıların uygulamaya giriş yapabilmesi için aşağıdaki özellikleri sunar:
+ * - E-posta ve şifre ile giriş
+ * - Google hesabı ile giriş
+ * - GitHub hesabı ile giriş
+ * - Kayıt sayfasına yönlendirme
+ * - Uygulama logosu gösterimi
+ */
+
 class LoginPage extends StatefulWidget {
   @override
   State<LoginPage> createState() => _LoginPageState();
 }
 
 class _LoginPageState extends State<LoginPage> {
-  // Firebase servisi
+  // Kimlik doğrulama ve veritabanı servisleri
   final FirebaseService _firebaseService = FirebaseService();
   final AuthService _authService = AuthService();
   final SupabaseService _supabaseService = SupabaseService(Supabase.instance.client);
   
-  // Text controller'lar
+  // Form alanları için kontrolcüler
   final emailController = TextEditingController();
   final sifreController = TextEditingController();
   
-  // Loading durumu
+  // Sayfa durumu ve logo URL'i
   bool _isLoading = false;
   String? _logoUrl;
 

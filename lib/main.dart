@@ -1,3 +1,6 @@
+// Bu dosya, Voxure uygulamasının ana giriş noktasıdır.
+// Firebase ve Supabase servislerini başlatır, tema ayarlarını yapar ve sayfa yönlendirmelerini yönetir.
+
 import 'package:flutter/material.dart';
 import 'screens/login_page.dart';
 import 'screens/home_page.dart';
@@ -17,10 +20,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide User;
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth show User;
 
-// Global key for app state
+// Uygulama genelinde kullanılacak gezinme anahtarı
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-// Global function to restart app
+// Uygulamayı yeniden başlatmak için kullanılan fonksiyon
 void restartApp() {
   runApp(MyApp());
 }
@@ -30,7 +33,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   try {
-    // Firebase'i başlat
+    // Firebase servisini başlat
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
@@ -43,6 +46,7 @@ void main() async {
     print('Initialization error: $e');
   }
 
+  // Supabase servisini başlat
   await Supabase.initialize(
     url: 'https://bkytzrsygidkkshpzsyd.supabase.co', // Supabase proje URL'niz
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJreXR6cnN5Z2lka2tzaHB6c3lkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg3ODcwMTksImV4cCI6MjA2NDM2MzAxOX0.CmZIdh2bQ6xIVbLjj_ZCbTfVOudw2vTLHiVRGhDKK2E', // Supabase anonim anahtariniz
@@ -98,7 +102,7 @@ class MyApp extends StatelessWidget {
             return LoginPage();
           }
           
-          // Kullanıcı varsa ana sayfaya, yoksa login sayfasına yönlendir
+          // Kullanıcı oturum durumuna göre sayfa yönlendirmesi yap
           final user = snapshot.data;
           if (user != null) {
             print('User is signed in: ${user.email}');
